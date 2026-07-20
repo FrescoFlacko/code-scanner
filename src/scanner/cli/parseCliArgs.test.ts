@@ -14,6 +14,18 @@ describe("parseCliArgs", () => {
       expect(result.saveAsJson).toBe(null);
       expect(result.help).toBe(false);
       expect(result.version).toBe(false);
+      expect(result.profiles).toEqual([]);
+    });
+  });
+
+  describe("--profile flag", () => {
+    it("collects explicit profiles", () => {
+      expect(parseCliArgs(["--profile", "angular", "--profile=lambda"]).profiles).toEqual(["angular", "lambda"]);
+    });
+
+    it("rejects unknown and missing profiles", () => {
+      expect(() => parseCliArgs(["--profile", "reactish"])).toThrow(UserError);
+      expect(() => parseCliArgs(["--profile"])).toThrow(UserError);
     });
   });
 
@@ -82,6 +94,11 @@ describe("parseCliArgs", () => {
       const result = parseCliArgs(["--exclude=*.test.ts"]);
       expect(result.excludes).toEqual(["*.test.ts"]);
     });
+
+    it.each([["--exclude"], ["-e"], ["--exclude="]])("rejects a missing pattern for %s", (...args) => {
+      expect(() => parseCliArgs(args)).toThrow(UserError);
+      expect(() => parseCliArgs(args)).toThrow(/requires a non-empty glob pattern/);
+    });
   });
 
   describe("boolean flags", () => {
@@ -115,6 +132,10 @@ describe("parseCliArgs", () => {
     it("preserves absolute paths", () => {
       const result = parseCliArgs(["/absolute/path"]);
       expect(result.targetPath).toBe("/absolute/path");
+    });
+
+    it("rejects multiple positional paths", () => {
+      expect(() => parseCliArgs(["./src", "./lib"])).toThrow("Only one target path may be provided");
     });
   });
 

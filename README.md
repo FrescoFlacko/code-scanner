@@ -30,6 +30,16 @@ It scans files matching:
 npm install
 ```
 
+## Global install
+
+Install from the repo root with npm:
+
+```bash
+npm install -g .
+```
+
+The package now builds automatically during packaging, so you do not need to run `npm run build` first.
+
 ## Build
 
 ```bash
@@ -59,13 +69,19 @@ You can also run the default scan via:
 npm run scan
 ```
 
+After a global install, you can run it directly:
+
+```bash
+code-scanner --help
+```
+
 ### CLI
 
 ```text
 code-scanner [path] [options]
 ```
 
-- `path`: Directory or file to scan (default: `./src`)
+- `path`: Directory to scan (default: `./src`)
 
 ### Options
 
@@ -79,6 +95,9 @@ code-scanner [path] [options]
 - `--exclude, -e <pattern>`
   - Exclude files matching a glob pattern. Can be provided multiple times.
   - Examples: `"*.test.ts"`, `"**/node_modules/**"`, `"src/generated/*"`
+- `--profile, -p <name>`
+  - Adds an explicit profile. May be repeated.
+  - Available profiles: `generic` (always included), `typed`, `node`, `browser`, `react`, `lambda`, `angular`, and `strict`.
 - `--legend`
   - Print metric explanations after the report.
 - `--version, -v`
@@ -142,7 +161,11 @@ Example:
     "**/node_modules/**",
     "**/dist/**",
     "**/*.test.ts"
-  ]
+  ],
+  "profiles": ["angular"],
+  "rules": {
+    "sonarjs/no-duplicate-string": ["warn", { "threshold": 5 }]
+  }
 }
 ```
 
@@ -151,6 +174,47 @@ Notes:
 - If `.scannerrc.json` is missing, defaults are used.
 - If it exists but contains invalid JSON, it is ignored and a warning is printed.
 - CLI excludes (`--exclude/-e`) are merged with config excludes.
+- Profiles are explicit: project detection never silently changes the rule set.
+- Metric probes collect complexity values but are not counted as rule violations.
+
+### General JavaScript/TypeScript profiles
+
+The always-on `generic` profile combines ESLint's recommended correctness rules, the scanner's curated SonarJS and security checks, and the recommended non-type-aware TypeScript rules. It supports `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.mts`, `.cts`, and `.tsx`. Generated sources and tests use lighter scopes to avoid type-service and generated-code noise.
+
+Add only the profiles that describe the repository:
+
+- `typed` enables type-aware TypeScript reliability checks, including unhandled promises and unsafe async usage. Production TypeScript must be included by a reachable `tsconfig.json`.
+- `node` defines Node.js runtime globals such as `process`, `Buffer`, and `__dirname`.
+- `browser` defines browser globals such as `window`, `document`, and `fetch`.
+- `react` defines browser globals and enables the official React Hooks recommended rules for JSX/TSX and related source files.
+- `strict` adds higher-noise consistency and duplication checks for teams that want a stricter gate.
+
+For example, a typed React frontend typically uses `--profile typed --profile browser --profile react`; a general Node service typically uses `--profile typed --profile node`.
+
+### Angular profile behavior
+
+The `angular` profile uses the closest project `tsconfig.json` through the TypeScript project service for production TypeScript files. It adds:
+
+- Angular lifecycle, signal, subscription, output, injectable, and metadata checks
+- Type-aware promise, unsafe-value, exhaustiveness, assertion, and unused-variable checks
+- Angular sanitization-bypass, dynamic-template, clear-text protocol, DOMPurify, and `postMessage` security checks
+- Review-required checks for direct DOM HTML sinks, disabling Angular XSRF protection, and credential-like browser storage keys
+- External and inline template correctness, accessibility, button-type, image, tracking, duplicate-attribute, and bounded-complexity checks
+
+Spec files use a lighter non-type-aware correctness/cleanliness configuration. Files under `generated/`, `generated-api/`, or matching `*.generated.ts` are scanned as files but do not produce quality findings.
+
+### Lambda profile behavior
+
+The `lambda` profile applies type-aware analysis to production TypeScript and keeps specs/generated files in lighter scopes. In addition to generic and AWS security rules, it checks:
+
+- Floating/misused promises, unsafe typed values, exhaustive switches, unnecessary assertions, and unused variables
+- AWS service clients constructed inside handlers instead of reusable module scope
+- Async handlers that also declare callback completion
+- Logging complete event/request values that may contain credentials or personal data
+- Outbound URLs derived directly from event/request input (SSRF review hotspot)
+- Calling `process.exit()` from a handler
+
+Infrastructure rules remain relevant where matching AWS CDK constructs are present. Generated clients do not produce quality findings.
 
 ## Output
 

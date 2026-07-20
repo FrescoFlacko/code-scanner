@@ -1,5 +1,6 @@
 import type { Grade } from "../types.js";
 import { THRESHOLDS } from "../../../scanner.config.js";
+import { scoreCommentRatio } from "./scoreCommentRatio.js";
 
 /**
  * Grading weights for each metric (must sum to 1.0)
@@ -11,12 +12,12 @@ import { THRESHOLDS } from "../../../scanner.config.js";
  * - Comment ratio is a minor factor
  */
 const WEIGHTS = {
-  security: 0.25,      // Security is critical
-  cognitive: 0.20,     // Code readability
-  cyclomatic: 0.15,    // Testability
-  maintainability: 0.20, // Code smells
-  cleanliness: 0.10,   // Hygiene
-  commentRatio: 0.10,  // Documentation
+  security: 0.25, // Security is critical
+  cognitive: 0.2, // Code readability
+  cyclomatic: 0.15, // Testability
+  maintainability: 0.2, // Code smells
+  cleanliness: 0.1, // Hygiene
+  commentRatio: 0.1, // Documentation
 };
 
 /**
@@ -43,61 +44,46 @@ interface FileMetrics {
   commentRatio: number;
 }
 
-/**
- * Calculate a score (0-100) for a single metric
- * Higher score = better quality
- */
-function scoreMetric(value: number, thresholds: { low: number; medium: number; high: number }): number {
-  // For metrics where 0 is best (security, maintainability, cleanliness)
-  if (thresholds.low === 0 && thresholds.medium === 0) {
-    // Security: any issue is bad
-    if (value === 0) return 100;
-    if (value <= 1) return 60;
-    if (value <= 3) return 40;
-    if (value <= 5) return 20;
-    return 0;
-  }
-
-  // For complexity metrics (cognitive, cyclomatic) and issue counts
-  if (value <= thresholds.low) {
-    // Scale 0-low to score 100-90
-    const ratio = value / Math.max(thresholds.low, 1);
-    return 100 - (ratio * 10);
-  }
-  if (value <= thresholds.medium) {
-    // Scale low-medium to score 90-70
-    const ratio = (value - thresholds.low) / (thresholds.medium - thresholds.low);
-    return 90 - (ratio * 20);
-  }
-  if (value <= thresholds.high) {
-    // Scale medium-high to score 70-50
-    const ratio = (value - thresholds.medium) / (thresholds.high - thresholds.medium);
-    return 70 - (ratio * 20);
-  }
-  // Beyond high threshold: score 50-0
-  const beyondHigh = value - thresholds.high;
-  const score = Math.max(0, 50 - (beyondHigh * 5));
-  return score;
+/** Scores a metric whose ideal value is zero. */
+function scoreZeroTargetMetric(value: number): number {
+  if (value === 0) return 100;
+  if (value <= 1) return 60;
+  if (value <= 3) return 40;
+  if (value <= 5) return 20;
+  return 0;
 }
 
-/**
- * Score comment ratio (ideal is 5-30%)
- */
-function scoreCommentRatio(ratio: number): number {
-  if (ratio >= 5 && ratio <= 30) {
-    // Ideal range: full score
-    return 100;
+/** Scores a metric across its low, medium, and high ranges. */
+function scoreRangedMetric(
+  value: number,
+  thresholds: { low: number; medium: number; high: number },
+): number {
+  if (value <= thresholds.low) {
+    const ratio = value / Math.max(thresholds.low, 1);
+    return 100 - ratio * 10;
   }
-  if (ratio < 5) {
-    // Too few comments: scale 0-5% to 60-100
-    return 60 + (ratio / 5) * 40;
+  if (value <= thresholds.medium) {
+    const ratio =
+      (value - thresholds.low) / (thresholds.medium - thresholds.low);
+    return 90 - ratio * 20;
   }
-  // Too many comments (>30%): scale 30-50% to 100-60
-  if (ratio <= 50) {
-    const excess = ratio - 30;
-    return 100 - (excess * 2);
+  if (value <= thresholds.high) {
+    const ratio =
+      (value - thresholds.medium) / (thresholds.high - thresholds.medium);
+    return 70 - ratio * 20;
   }
-  return 50; // Very high comment ratio
+  const beyondHigh = value - thresholds.high;
+  return Math.max(0, 50 - beyondHigh * 5);
+}
+
+/** Calculates a score from zero to one hundred for a single metric. */
+function scoreMetric(
+  value: number,
+  thresholds: { low: number; medium: number; high: number },
+): number {
+  return thresholds.low === 0 && thresholds.medium === 0
+    ? scoreZeroTargetMetric(value)
+    : scoreRangedMetric(value, thresholds);
 }
 
 /**
@@ -108,13 +94,16 @@ export function calculateGrade(metrics: FileMetrics): Grade {
     security: scoreMetric(metrics.security, THRESHOLDS.security),
     cognitive: scoreMetric(metrics.cognitive, THRESHOLDS.cognitive),
     cyclomatic: scoreMetric(metrics.cyclomatic, THRESHOLDS.cyclomatic),
-    maintainability: scoreMetric(metrics.maintainability, THRESHOLDS.maintainability),
+    maintainability: scoreMetric(
+      metrics.maintainability,
+      THRESHOLDS.maintainability,
+    ),
     cleanliness: scoreMetric(metrics.cleanliness, THRESHOLDS.cleanliness),
     commentRatio: scoreCommentRatio(metrics.commentRatio),
   };
 
   // Calculate weighted average
-  const weightedScore = 
+  const weightedScore =
     scores.security * WEIGHTS.security +
     scores.cognitive * WEIGHTS.cognitive +
     scores.cyclomatic * WEIGHTS.cyclomatic +
@@ -167,7 +156,7 @@ export function calculateGrade(metrics: FileMetrics): Grade {
 export function getGradeDisplay(grade: Grade): string {
   const displays: Record<Grade, string> = {
     A: "🟢 A",
-    B: "🟡 B", 
+    B: "🟡 B",
     C: "🟠 C",
     D: "🔴 D",
     F: "⛔ F",

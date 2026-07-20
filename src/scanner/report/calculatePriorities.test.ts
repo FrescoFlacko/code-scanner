@@ -11,6 +11,7 @@ function createMockFile(overrides: Partial<FileReport> = {}): FileReport {
     security: 0,
     maintainability: 0,
     cleanliness: 0,
+    scannerErrors: 0,
     commentRatio: 10,
     grade: "A",
     issues: [],
@@ -23,6 +24,7 @@ function createMockTotals(overrides: Partial<Totals> = {}): Totals {
     security: 0,
     maintainability: 0,
     cleanliness: 0,
+    scannerErrors: 0,
     avgCognitive: 0,
     avgCyclomatic: 0,
     ...overrides,
@@ -39,6 +41,23 @@ describe("calculatePriorities", () => {
   });
 
   describe("sorting by score", () => {
+    it("prioritizes incomplete scans above code-quality findings", () => {
+      const files = [
+        createMockFile({ file: "security.ts", relativePath: "security.ts", security: 20, grade: "F" }),
+        createMockFile({ file: "unscanned.ts", relativePath: "unscanned.ts", scannerErrors: 1, grade: "F" }),
+      ];
+
+      const result = calculatePriorities(files, createMockTotals({ security: 20, scannerErrors: 1 }));
+
+      expect(result.items[0]).toMatchObject({
+        file: "unscanned.ts",
+        projectedGrade: "F",
+        primaryReason: "Scanner Failed (1 operational error)",
+        impact: { scannerErrorReduction: 1, scannerErrorPercentage: 100 },
+      });
+      expect(result.overallImprovementPct).toBeGreaterThan(99);
+    });
+
     it("sorts files by priority score descending", () => {
       const files = [
         createMockFile({ file: "low.ts", relativePath: "low.ts", security: 0, maintainability: 5 }),

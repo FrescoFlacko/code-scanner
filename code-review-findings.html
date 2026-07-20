@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Code Scanner — Remaining Bug Report</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; line-height: 1.55; }
+    body { max-width: 1050px; margin: 0 auto; padding: 2rem; }
+    h1, h2, h3 { line-height: 1.2; }
+    h2 { margin-top: 2.2rem; border-bottom: 1px solid #8886; padding-bottom: .4rem; }
+    code { padding: .1rem .3rem; border-radius: .25rem; background: #8882; }
+    .summary { padding: 1rem; border-left: .4rem solid #1971c2; background: #1971c218; }
+    .finding { margin: 1.2rem 0; padding: 1rem 1.2rem; border: 1px solid #8886; border-left-width: .45rem; border-radius: .35rem; }
+    .high { border-left-color: #d9480f; } .medium { border-left-color: #f08c00; } .low { border-left-color: #1971c2; }
+    .severity { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .high .severity { color: #e8590c; } .medium .severity { color: #f59f00; } .low .severity { color: #339af0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #8886; padding: .65rem; text-align: left; vertical-align: top; }
+    li { margin: .35rem 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Remaining bug and improvement report</h1>
+  <p>Post-fix audit updated <time datetime="2026-07-11">July 11, 2026</time>.</p>
+  <p class="summary"><strong>Scope:</strong> this report contains only findings that remain unresolved after the previous remediation. Fixed findings have been removed. The second pass found 1 high-, 4 medium-, and 3 low-severity items.</p>
+
+  <h2>Current scan result</h2>
+  <table>
+    <tbody>
+      <tr><th>Files scanned</th><td>39</td></tr>
+      <tr><th>Scanner/parser errors</th><td>0</td></tr>
+      <tr><th>Reported totals</th><td>48 security, 605 maintainability, 0 cleanliness</td></tr>
+      <tr><th>Highest-priority files</th><td><code>getGitChangedFiles.test.ts</code>, <code>getGitChangedFiles.ts</code>, <code>calculateCommentRatio.ts</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>High severity</h2>
+
+  <article class="finding high">
+    <h3>1. Fatal scanner errors are absent from totals and can be omitted from priorities</h3>
+    <p><span class="severity">High</span> — <code>src/scanner/report/buildReport.ts:39-55,102</code>; <code>src/scanner/report/calculateTotals.ts:3-27</code>; <code>src/scanner/report/calculatePriorities.ts:5-12,15-30,57-66</code></p>
+    <p><strong>Evidence:</strong> a parser failure now correctly forces grade F and creates an <code>other/scanner-error</code> issue, but totals have no scanner-error count and priority score ignores it. Reproduction with one malformed and one valid TypeScript file reported the broken file as F with score 0 and reason “Most Issues (0 total),” below the valid A-grade file. With three positive-score files, the malformed file drops out of the top-three priorities entirely.</p>
+    <p><strong>Impact:</strong> the most fundamental scan failure can be absent from the summary and recommended remediation order.</p>
+    <p><strong>Fix:</strong> add a first-class scanner-error metric to file reports, totals, history, JSON, and priority impact. Give scanner errors priority above rule findings and use a clear primary reason such as “File could not be analyzed.”</p>
+  </article>
+
+  <h2>Medium severity</h2>
+
+  <article class="finding medium">
+    <h3>2. Blanket-enabling all Sonar rules creates policy-dependent false positives</h3>
+    <p><span class="severity">Medium</span> — <code>scanner.config.ts:107-129</code></p>
+    <p><strong>Evidence:</strong> every exported Sonar rule is enabled with <code>"warn"</code>, including rules that represent optional organizational policy or need configuration. A minimal valid file containing only <code>export const x = 1</code> is reported for <code>sonarjs/file-header</code> even though the scanner has no configured header format. The self-scan currently emits 605 maintainability findings across 39 files.</p>
+    <p><strong>Impact:</strong> noisy or meaningless findings reduce trust in grades and can bury actionable defects.</p>
+    <p><strong>Fix:</strong> maintain a curated default profile of context-free rules. Put policy/framework/type-aware rules behind explicit configuration, validate required options, and add golden fixture tests for the default profile.</p>
+  </article>
+
+  <article class="finding medium">
+    <h3>3. Overall improvement percentage uses a different model from priority scoring</h3>
+    <p><span class="severity">Medium</span> — <code>src/scanner/report/calculatePriorities.ts:5-12,83-98</code></p>
+    <p><strong>Evidence:</strong> priority scores include cognitive and cyclomatic complexity, but <code>totalWeightedIssues</code> and <code>top3WeightedIssues</code> exclude both. A scan whose priorities are driven only by complexity reports an overall improvement estimate of 0% even though projected grades assume those metrics are fixed.</p>
+    <p><strong>Fix:</strong> define one canonical impact-weight function and reuse it for sorting and the numerator/denominator, or rename the percentage to state that it covers issue counts only.</p>
+  </article>
+
+  <article class="finding medium">
+    <h3>4. Zero-score clean files are still presented as priorities</h3>
+    <p><span class="severity">Medium</span> — <code>src/scanner/report/calculatePriorities.ts:57-71</code></p>
+    <p><strong>Evidence:</strong> the function sorts every report entry and always slices three. Repositories with fewer than three files needing work receive arbitrary score-zero entries with “Most Issues (0 total).”</p>
+    <p><strong>Fix:</strong> filter to actionable entries before taking the top three. Scanner errors must remain actionable through finding 1’s dedicated metric.</p>
+  </article>
+
+  <article class="finding medium">
+    <h3>5. History validation accepts impossible metric ranges</h3>
+    <p><span class="severity">Medium</span> — <code>src/scanner/history/loadHistory.ts:32-44</code></p>
+    <p><strong>Evidence:</strong> validation checks only that metrics are finite. A version-1 history containing negative issue counts and complexity plus <code>commentRatio: 500</code> was accepted and returned as valid.</p>
+    <p><strong>Impact:</strong> corrupted or manually edited state can produce nonsensical trend deltas while appearing schema-valid.</p>
+    <p><strong>Fix:</strong> require non-negative integer counts, non-negative complexity values, and a comment ratio within 0–100. Cross-check <code>totals.files</code> against the file map when history represents a full scan.</p>
+  </article>
+
+  <h2>Low severity and performance improvements</h2>
+
+  <article class="finding low">
+    <h3>6. JSON metadata still omits built-in effective exclusions</h3>
+    <p><span class="severity">Low</span> — <code>src/scanner/index.ts:97-100</code>; <code>src/scanner/files/resolveFilesToScan.ts:8-13,26</code></p>
+    <p>The JSON artifact records merged CLI/config excludes but not the default dependency/build/VCS exclusions actually used. Reports therefore remain not fully reproducible. Return effective discovery options from one owner or include separate <code>defaultExcludes</code>, <code>configuredExcludes</code>, and final <code>effectiveExcludes</code> fields.</p>
+  </article>
+
+  <article class="finding low">
+    <h3>7. JSON output writes are not atomic</h3>
+    <p><span class="severity">Low</span> — <code>src/scanner/output/writeJsonOutput.ts:13-16</code></p>
+    <p>An interrupted process or concurrent readers can observe a truncated report. Use a unique same-directory temporary file with exclusive creation, then rename atomically, matching the hardened history writer.</p>
+  </article>
+
+  <article class="finding low">
+    <h3>8. The async public API still performs blocking per-file and Git operations</h3>
+    <p><span class="severity">Low</span> — <code>src/scanner/git/getGitChangedFiles.ts:7-20</code>; <code>src/scanner/metrics/calculateCommentRatio.ts:23-24</code></p>
+    <p><code>execFileSync</code>, <code>realpathSync</code>, and one synchronous source read per result block embedding applications on large repositories. Convert Git execution and file reads to async APIs, or reuse source text from the lint pipeline where available.</p>
+  </article>
+
+  <h2>Recommended order</h2>
+  <ol>
+    <li>Make scanner errors a first-class metric and priority signal.</li>
+    <li>Curate and contract-test the default Sonar rule profile.</li>
+    <li>Unify priority scoring and improvement calculations; remove zero-score priorities.</li>
+    <li>Tighten history ranges and complete JSON discovery metadata.</li>
+    <li>Harden JSON writes and finish async I/O conversion.</li>
+  </ol>
+
+  <h2>Verification performed</h2>
+  <ul>
+    <li>Ran the scanner against its own current <code>src</code> tree.</li>
+    <li>Ran the maintainable-TypeScript audit; compilation passed. Optional oxlint/Fallow checks remain unavailable because those tools are not installed.</li>
+    <li>Reproduced scanner-error priority omission with malformed TypeScript.</li>
+    <li>Reproduced default <code>file-header</code> noise with a minimal valid file.</li>
+    <li>Reproduced acceptance of negative and out-of-range history values.</li>
+    <li>Reviewed current report, priority, history, output, Git, and discovery contracts.</li>
+  </ul>
+</main>
+</body>
+</html>

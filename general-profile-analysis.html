@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>General JS/TS Profile — 8/10 Assessment</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1020; --panel:#131b2f; --ink:#edf3ff; --muted:#aab7d1; --accent:#66e3c4; --line:#2a3653; --warn:#ffd479; }
+    * { box-sizing:border-box } body { margin:0; font:16px/1.55 system-ui,-apple-system,sans-serif; background:linear-gradient(145deg,#08101d,#111a31); color:var(--ink) }
+    main { width:min(1080px,calc(100% - 32px)); margin:40px auto 72px } h1,h2 { line-height:1.15 } h1 { font-size:clamp(2rem,5vw,4rem); margin:.15em 0 }
+    h2 { margin-top:2rem } .eyebrow,.score { color:var(--accent); font-weight:750; letter-spacing:.08em; text-transform:uppercase }
+    .hero,.card { background:rgba(19,27,47,.92); border:1px solid var(--line); border-radius:18px; padding:24px; box-shadow:0 18px 60px #0005 }
+    .hero { display:grid; grid-template-columns:1fr auto; gap:24px; align-items:center } .score { font-size:clamp(3rem,8vw,6rem); white-space:nowrap }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(235px,1fr)); gap:16px; margin:16px 0 } .card h3 { margin-top:0 }
+    table { width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px; background:var(--panel) } th,td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line) } th { color:var(--accent) }
+    code { color:#b9f4e7; background:#08101d; padding:.1em .35em; border-radius:5px } .muted { color:var(--muted) } .callout { border-left:4px solid var(--warn); padding:10px 16px; background:#ffd47912 }
+    ul { padding-left:1.25rem } li + li { margin-top:.4rem } @media(max-width:650px){.hero{grid-template-columns:1fr}.score{font-size:4rem}th,td{padding:9px 7px;font-size:.88rem}}
+  </style>
+</head>
+<body><main>
+  <section class="hero">
+    <div><div class="eyebrow">Post-change assessment · 11 July 2026</div><h1>General JS/TS profile</h1><p class="muted">Portable correctness, maintainability, security, and cleanliness coverage for mixed JavaScript and TypeScript repositories.</p></div>
+    <div class="score">8/10</div>
+  </section>
+
+  <h2>Outcome</h2>
+  <div class="grid">
+    <article class="card"><h3>Correctness</h3><p>ESLint's recommended rules are always active, catching undefined identifiers, unreachable code, invalid control flow, duplicate declarations, and related defects.</p></article>
+    <article class="card"><h3>TypeScript</h3><p>Recommended non-type-aware TypeScript rules are portable by default. The opt-in <code>typed</code> profile adds promise and unsafe-value analysis where a project service is available.</p></article>
+    <article class="card"><h3>Environments</h3><p><code>node</code> and <code>browser</code> add accurate runtime globals. This avoids both false positives and the unsafe assumption that every global exists everywhere.</p></article>
+    <article class="card"><h3>Framework</h3><p>The opt-in <code>react</code> profile uses the official React Hooks recommended rules. Angular and Lambda retain their specialized 8/10 profiles.</p></article>
+  </div>
+
+  <h2>Profile composition</h2>
+  <table><thead><tr><th>Profile</th><th>Purpose</th><th>Expected use</th></tr></thead><tbody>
+    <tr><td><code>generic</code></td><td>Core JS correctness, curated Sonar/security, untyped TS cleanliness</td><td>Every JS/TS repository</td></tr>
+    <tr><td><code>typed</code></td><td>Type-aware promises and unsafe-value checks</td><td>Production TS covered by tsconfig</td></tr>
+    <tr><td><code>node</code></td><td>Node runtime globals</td><td>Services, CLIs, build tools</td></tr>
+    <tr><td><code>browser</code></td><td>Browser runtime globals</td><td>Web applications and libraries</td></tr>
+    <tr><td><code>react</code></td><td>Official React Hooks recommended rules</td><td>React JSX/TSX repositories</td></tr>
+    <tr><td><code>strict</code></td><td>Higher-noise consistency and duplication policy</td><td>Teams choosing stricter gates</td></tr>
+  </tbody></table>
+
+  <h2>Calibration scans</h2>
+  <table><thead><tr><th>Repository</th><th>Profiles</th><th>Files</th><th>Security</th><th>Maintainability</th><th>Cleanliness</th><th>Scanner errors</th></tr></thead><tbody>
+    <tr><td>code-scanner</td><td>node + typed</td><td>50</td><td>0</td><td>4</td><td>0</td><td>0</td></tr>
+    <tr><td>themambaleague frontend</td><td>browser + react</td><td>266</td><td>0</td><td>55</td><td>34</td><td>0</td></tr>
+    <tr><td>solana-blinks-donation</td><td>node + browser + react</td><td>67</td><td>0</td><td>11</td><td>1</td><td>0</td></tr>
+  </tbody></table>
+  <p class="muted">Counts are post-change findings, not defect density scores. Existing Angular scans and their scores remain documented in the Angular profile report.</p>
+
+  <h2>Why this is 8/10</h2>
+  <ul>
+    <li>Broad, defensible correctness coverage now applies to JS, JSX, TS, TSX, MJS, CJS, MTS, and CTS.</li>
+    <li>Runtime and framework assumptions are explicit and composable instead of being guessed.</li>
+    <li>Generated sources are suppressed; tests and tooling configs use a lighter scope, preventing type-project failures.</li>
+    <li>The high-volume <code>no-explicit-any</code> policy is disabled in the portable baseline and remains available as an override.</li>
+    <li>Rule inventories and dependency versions are locked by tests to make upgrades visible.</li>
+  </ul>
+  <div class="callout"><strong>Remaining gap to 9/10:</strong> repository-aware overrides for mixed server/client boundaries, first-class Vue/Svelte/Next profiles, import-resolution and dependency-boundary analysis, and a measured false-positive budget across a larger corpus. Those improvements require product policy and ecosystem-specific calibration, not simply enabling more rules.</div>
+
+  <h2>Verification</h2>
+  <p>Automated coverage includes generic JS correctness, TS cleanliness, Node/browser globals, React Hooks, typed promises, generated files, Angular, Lambda, history behavior, configuration validation, operational failures, and manifest drift. The completed suite contains <strong>158 passing tests</strong>.</p>
+</main></body></html>
