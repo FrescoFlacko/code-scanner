@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enhanced Lambda Profile Analysis</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; line-height: 1.55; }
+    body { max-width: 1050px; margin: 0 auto; padding: 2rem; }
+    h1, h2 { line-height: 1.2; } h2 { margin-top: 2.2rem; border-bottom: 1px solid #8886; padding-bottom: .4rem; }
+    table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #8886; padding: .65rem; text-align: left; vertical-align: top; }
+    code { padding: .1rem .3rem; border-radius: .25rem; background: #8882; }
+    .summary { padding: 1rem; border-left: .4rem solid #2b8a3e; background: #2b8a3e18; }
+    .warning { padding: 1rem; border-left: .4rem solid #e67700; background: #e6770018; }
+    li { margin: .35rem 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Enhanced Lambda profile analysis</h1>
+  <p>Updated <time datetime="2026-07-11">July 11, 2026</time>.</p>
+  <p class="summary"><strong>Assessment:</strong> the Lambda profile now has the same architectural treatment as Angular: typed production analysis, lighter spec/generated scopes, AWS security rules, and scanner-owned handler/runtime hotspots. It is ready for advisory use and fixture-backed CI checks. A production Lambda repository is still required for calibration.</p>
+
+  <h2>Profile score</h2>
+  <table>
+    <tbody>
+      <tr><th>Maintainability coverage</th><td>8/10</td></tr>
+      <tr><th>Security hotspot coverage</th><td>8/10</td></tr>
+      <tr><th>Cleanliness coverage</th><td>8/10</td></tr>
+      <tr><th>Cross-project applicability</th><td>8/10</td></tr>
+      <tr><th>Production calibration confidence</th><td>5/10 — no Lambda repository was found in the supplied workspace</td></tr>
+      <tr><th>Overall implementation</th><td><strong>8/10</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Coverage</h2>
+  <p>The resolved Lambda profile currently contains 59 production rules, with typed and generated/spec scoping applied by file type.</p>
+  <table>
+    <thead><tr><th>Area</th><th>Checks</th></tr></thead>
+    <tbody>
+      <tr><td>Typed reliability</td><td>Floating/misused promises, await correctness, unsafe arguments/assignments/calls/member access/returns, unnecessary assertions, exhaustive switches, and unused variables</td></tr>
+      <tr><td>Handler runtime</td><td>Service clients constructed inside handlers, async/callback completion mixing, and <code>process.exit()</code> in handlers</td></tr>
+      <tr><td>Security hotspots</td><td>Sensitive event/request logging, event-derived outbound URLs (SSRF review), hardcoded secrets/passwords, weak crypto/keys, dynamic SQL, OS commands, and IAM privilege escalation</td></tr>
+      <tr><td>Maintainability</td><td>Generic low-noise branch/control-flow rules plus Lambda handler lifecycle guidance</td></tr>
+      <tr><td>Scopes</td><td>Typed production TS, Lambda-aware JavaScript, lighter specs, generated-code suppression, and AWS IaC rules where constructs match</td></tr>
+      <tr><td>History/upgrade safety</td><td>Configuration schema 3 invalidates incompatible history and plugin inventory drift fails tests</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Positive fixture contract</h2>
+  <p>The integration suite proves detection of:</p>
+  <ul>
+    <li>A service client constructed inside <code>handler</code></li>
+    <li>An async handler that also declares a callback</li>
+    <li>Logging the complete event object</li>
+    <li>An outbound URL derived directly from the event</li>
+    <li><code>process.exit()</code> inside a handler</li>
+    <li>An unhandled floating promise</li>
+    <li>An unused TypeScript variable</li>
+  </ul>
+
+  <h2>Limits</h2>
+  <ul>
+    <li>Idempotency is business- and event-source-specific; linting cannot prove it.</li>
+    <li>Partial batch response, retry policy, timeout, memory, reserved concurrency, and IAM resource scope require infrastructure/deployment analysis.</li>
+    <li>Logging and event-derived URL findings are review hotspots, not confirmed vulnerabilities.</li>
+    <li>API Gateway authorization, backend access control, dependency vulnerabilities, and runtime data flow require separate controls.</li>
+  </ul>
+
+  <p class="warning"><strong>Recommended gate:</strong> fail CI for parser errors and reviewed definite security/reliability findings. Keep handler-architecture, logging, SSRF hotspots, complexity, and cleanliness advisory until a real Lambda repository is scanned and triaged.</p>
+
+  <h2>Validation status</h2>
+  <p>No package manifest under <code>/Users/yandre/workspace</code> declared <code>@types/aws-lambda</code>, <code>aws-lambda</code>, or <code>serverless</code>, so no representative production Lambda repository was available. The profile is therefore fixture-proven but not production-calibrated.</p>
+
+  <h2>Primary guidance</h2>
+  <ul>
+    <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html">AWS Lambda Node.js handler best practices</a></li>
+    <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html">AWS Lambda operational best practices</a></li>
+    <li><a href="https://typescript-eslint.io/getting-started/typed-linting/">typescript-eslint typed linting</a></li>
+  </ul>
+</main>
+</body>
+</html>

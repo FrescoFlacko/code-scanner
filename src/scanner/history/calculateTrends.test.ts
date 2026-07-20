@@ -12,6 +12,7 @@ function makeFileReport(overrides: Partial<FileReport> = {}): FileReport {
     security: 0,
     maintainability: 0,
     cleanliness: 0,
+    scannerErrors: 0,
     commentRatio: 0.1,
     grade: "A",
     issues: [],
@@ -24,6 +25,7 @@ function makeTotals(overrides: Partial<Totals> = {}): Totals {
     security: 0,
     maintainability: 0,
     cleanliness: 0,
+    scannerErrors: 0,
     avgCognitive: 5,
     avgCyclomatic: 3,
     ...overrides,
@@ -32,12 +34,17 @@ function makeTotals(overrides: Partial<Totals> = {}): Totals {
 
 function makeHistoryData(overrides: Partial<HistoryData> = {}): HistoryData {
   return {
+    version: 3,
+    configurationVersion: 1,
+    configurationFingerprint: "a".repeat(64),
+    profiles: ["generic"],
     timestamp: "2025-01-01T00:00:00.000Z",
     totals: {
       files: 1,
       security: 0,
       maintainability: 0,
       cleanliness: 0,
+      scannerErrors: 0,
       avgCognitive: 5,
       avgCyclomatic: 3,
     },
@@ -77,7 +84,16 @@ describe("calculateTrends", () => {
           avgCognitive: 6,
           avgCyclomatic: 3,
         },
-        files: { "file.ts": { cognitive: 6, cyclomatic: 3, security: 3, maintainability: 5, cleanliness: 10, commentRatio: 0.1 } },
+        files: {
+          "file.ts": {
+            cognitive: 6,
+            cyclomatic: 3,
+            security: 3,
+            maintainability: 5,
+            cleanliness: 10,
+            commentRatio: 0.1,
+          },
+        },
       });
 
       const result = calculateTrends(report, totals, history);
@@ -97,8 +113,24 @@ describe("calculateTrends", () => {
       ];
       const totals = makeTotals();
       const history = makeHistoryData({
-        totals: { files: 1, security: 0, maintainability: 0, cleanliness: 0, avgCognitive: 5, avgCyclomatic: 3 },
-        files: { "file1.ts": { cognitive: 5, cyclomatic: 3, security: 0, maintainability: 0, cleanliness: 0, commentRatio: 0.1 } },
+        totals: {
+          files: 1,
+          security: 0,
+          maintainability: 0,
+          cleanliness: 0,
+          avgCognitive: 5,
+          avgCyclomatic: 3,
+        },
+        files: {
+          "file1.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
+        },
       });
 
       const result = calculateTrends(report, totals, history);
@@ -116,7 +148,14 @@ describe("calculateTrends", () => {
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "existing.ts": { cognitive: 5, cyclomatic: 3, security: 0, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
+          "existing.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
@@ -133,8 +172,22 @@ describe("calculateTrends", () => {
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "remaining.ts": { cognitive: 5, cyclomatic: 3, security: 0, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
-          "deleted.ts": { cognitive: 10, cyclomatic: 5, security: 2, maintainability: 3, cleanliness: 5, commentRatio: 0.05 },
+          "remaining.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
+          "deleted.ts": {
+            cognitive: 10,
+            cyclomatic: 5,
+            security: 2,
+            maintainability: 3,
+            cleanliness: 5,
+            commentRatio: 0.05,
+          },
         },
       });
 
@@ -147,11 +200,20 @@ describe("calculateTrends", () => {
 
   describe("improved files", () => {
     it("identifies files with reduced cognitive complexity", () => {
-      const report = [makeFileReport({ relativePath: "improved.ts", cognitive: 3 })];
+      const report = [
+        makeFileReport({ relativePath: "improved.ts", cognitive: 3 }),
+      ];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "improved.ts": { cognitive: 10, cyclomatic: 5, security: 0, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
+          "improved.ts": {
+            cognitive: 10,
+            cyclomatic: 5,
+            security: 0,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
@@ -163,11 +225,20 @@ describe("calculateTrends", () => {
     });
 
     it("identifies files with reduced security issues", () => {
-      const report = [makeFileReport({ relativePath: "secured.ts", security: 1 })];
+      const report = [
+        makeFileReport({ relativePath: "secured.ts", security: 1 }),
+      ];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "secured.ts": { cognitive: 5, cyclomatic: 3, security: 5, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
+          "secured.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 5,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
@@ -181,11 +252,20 @@ describe("calculateTrends", () => {
 
   describe("regressed files", () => {
     it("identifies files with increased cognitive complexity", () => {
-      const report = [makeFileReport({ relativePath: "worse.ts", cognitive: 15 })];
+      const report = [
+        makeFileReport({ relativePath: "worse.ts", cognitive: 15 }),
+      ];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "worse.ts": { cognitive: 5, cyclomatic: 3, security: 0, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
+          "worse.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
@@ -197,11 +277,20 @@ describe("calculateTrends", () => {
     });
 
     it("identifies files with increased security issues", () => {
-      const report = [makeFileReport({ relativePath: "risky.ts", security: 8 })];
+      const report = [
+        makeFileReport({ relativePath: "risky.ts", security: 8 }),
+      ];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "risky.ts": { cognitive: 5, cyclomatic: 3, security: 2, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
+          "risky.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 2,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
@@ -212,12 +301,21 @@ describe("calculateTrends", () => {
       expect(result!.regressed[0].security).toBe(6); // 8 - 2
     });
 
-    it("identifies files with maintainability regression above threshold (>5)", () => {
-      const report = [makeFileReport({ relativePath: "messy.ts", maintainability: 20 })];
+    it("identifies files with increased maintainability issues", () => {
+      const report = [
+        makeFileReport({ relativePath: "messy.ts", maintainability: 20 }),
+      ];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "messy.ts": { cognitive: 5, cyclomatic: 3, security: 0, maintainability: 10, cleanliness: 0, commentRatio: 0.1 },
+          "messy.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 10,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
@@ -228,18 +326,89 @@ describe("calculateTrends", () => {
       expect(result!.regressed[0].maintainability).toBe(10); // 20 - 10
     });
 
-    it("does not flag maintainability regression at or below threshold (<=5)", () => {
-      const report = [makeFileReport({ relativePath: "ok.ts", maintainability: 15, cognitive: 5, security: 0 })];
+    it("identifies any maintainability regression consistently", () => {
+      const report = [
+        makeFileReport({
+          relativePath: "ok.ts",
+          maintainability: 15,
+          cognitive: 5,
+          security: 0,
+        }),
+      ];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "ok.ts": { cognitive: 5, cyclomatic: 3, security: 0, maintainability: 10, cleanliness: 0, commentRatio: 0.1 },
+          "ok.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 10,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
       const result = calculateTrends(report, totals, history);
 
-      expect(result!.regressed).toHaveLength(0);
+      expect(result!.regressed).toHaveLength(1);
+    });
+  });
+
+  describe("comment ratio quality", () => {
+    /** Calculates trends for a file whose only change is its comment ratio. */
+    function calculateCommentRatioTrend(
+      previousCommentRatio: number,
+      currentCommentRatio: number,
+    ) {
+      const report = [
+        makeFileReport({
+          relativePath: "comments.ts",
+          commentRatio: currentCommentRatio,
+        }),
+      ];
+      const history = makeHistoryData({
+        files: {
+          "comments.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: previousCommentRatio,
+          },
+        },
+      });
+
+      return calculateTrends(report, makeTotals(), history)!;
+    }
+
+    it("treats movement farther above the ideal range as a regression", () => {
+      const result = calculateCommentRatioTrend(40, 80);
+
+      expect(result.improved).toHaveLength(0);
+      expect(result.regressed).toHaveLength(1);
+    });
+
+    it("treats movement from above the ideal range into it as an improvement", () => {
+      const result = calculateCommentRatioTrend(80, 30);
+
+      expect(result.improved).toHaveLength(1);
+      expect(result.regressed).toHaveLength(0);
+    });
+
+    it("treats movement toward the ideal range from below as an improvement", () => {
+      const result = calculateCommentRatioTrend(2, 4);
+
+      expect(result.improved).toHaveLength(1);
+      expect(result.regressed).toHaveLength(0);
+    });
+
+    it("treats equal-quality movement within the ideal range as neutral", () => {
+      const result = calculateCommentRatioTrend(10, 20);
+
+      expect(result.improved).toHaveLength(0);
+      expect(result.regressed).toHaveLength(0);
     });
   });
 
@@ -249,7 +418,14 @@ describe("calculateTrends", () => {
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "old.ts": { cognitive: 5, cyclomatic: 3, security: 0, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
+          "old.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 0,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 
@@ -273,11 +449,24 @@ describe("calculateTrends", () => {
     });
 
     it("file can be both improved and regressed (different metrics)", () => {
-      const report = [makeFileReport({ relativePath: "mixed.ts", cognitive: 20, security: 0 })];
+      const report = [
+        makeFileReport({
+          relativePath: "mixed.ts",
+          cognitive: 20,
+          security: 0,
+        }),
+      ];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
-          "mixed.ts": { cognitive: 5, cyclomatic: 3, security: 5, maintainability: 0, cleanliness: 0, commentRatio: 0.1 },
+          "mixed.ts": {
+            cognitive: 5,
+            cyclomatic: 3,
+            security: 5,
+            maintainability: 0,
+            cleanliness: 0,
+            commentRatio: 0.1,
+          },
         },
       });
 

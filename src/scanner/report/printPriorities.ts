@@ -21,6 +21,12 @@ export function printPriorities(priorities: PrioritiesResult): void {
 
     const impactLines: string[] = [];
 
+    if (item.impact.scannerErrorReduction > 0) {
+      impactLines.push(
+        `Would restore analysis for ${item.impact.scannerErrorReduction} scanner error${item.impact.scannerErrorReduction > 1 ? "s" : ""} (${item.impact.scannerErrorPercentage}% of total)`,
+      );
+    }
+
     if (item.impact.securityReduction > 0) {
       impactLines.push(
         `Would reduce security issues by ${item.impact.securityReduction} (${item.impact.securityPercentage}% of total)`

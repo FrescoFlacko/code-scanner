@@ -1,6 +1,17 @@
-import type { Linter } from "eslint";
+import type { ESLint } from "eslint";
 
 export type Grade = "A" | "B" | "C" | "D" | "F";
+export const PROFILE_NAMES = [
+  "generic",
+  "typed",
+  "node",
+  "browser",
+  "react",
+  "lambda",
+  "angular",
+  "strict",
+] as const;
+export type ProfileName = (typeof PROFILE_NAMES)[number];
 
 export interface Issue {
   rule: string;
@@ -18,6 +29,8 @@ export interface FileReport {
   security: number;
   maintainability: number;
   cleanliness: number;
+  /** Fatal parser or scanner-configuration errors that prevented complete analysis. */
+  scannerErrors: number;
   commentRatio: number;
   grade: Grade;
   issues: Issue[];
@@ -27,6 +40,8 @@ export interface Totals {
   security: number;
   maintainability: number;
   cleanliness: number;
+  /** Operational failures are separate from code-quality findings. */
+  scannerErrors: number;
   avgCognitive: number;
   avgCyclomatic: number;
 }
@@ -34,8 +49,14 @@ export interface Totals {
 export interface FileTrendInfo {
   file: string;
   cognitive: number;
+  cyclomatic: number;
   security: number;
-  maintainability?: number;
+  maintainability: number;
+  cleanliness: number;
+  scannerErrors: number;
+  commentRatio: number;
+  /** Signed change in the comment-ratio grading score. */
+  commentRatioQuality: number;
 }
 
 export interface Trends {
@@ -43,6 +64,7 @@ export interface Trends {
     security: number;
     maintainability: number;
     cleanliness: number;
+    scannerErrors: number;
     avgCognitive: number;
     avgCyclomatic: number;
     files: number;
@@ -62,6 +84,7 @@ export interface CliArgs {
   saveAsJson: string | null;
   help: boolean;
   version: boolean;
+  profiles: ProfileName[];
 }
 
 export interface ScanOptions {
@@ -73,6 +96,11 @@ export interface ScanOptions {
   listIssues?: boolean;
   saveAsJson?: string | null;
   help?: boolean;
+  /** Suppress console presentation when using the programmatic API. */
+  quiet?: boolean;
+  /** Read and update trend history. Defaults to true for full scans. */
+  persistHistory?: boolean;
+  profiles?: ProfileName[];
 }
 
 export interface ScanResult {
@@ -85,6 +113,7 @@ export interface RuleCategories {
   security: string[];
   maintainability: string[];
   cleanliness: string[];
+  metrics: string[];
 }
 
 export interface HistoryEntry {
@@ -95,15 +124,11 @@ export interface HistoryEntry {
 
 export interface ScannerConfig {
   exclude: string[];
+  profiles: ProfileName[];
+  rules: Record<string, unknown>;
 }
 
-// ESLint result types (simplified from ESLint's types)
-export interface ESLintResult {
-  filePath: string;
-  messages: Linter.LintMessage[];
-  errorCount: number;
-  warningCount: number;
-}
+export type ESLintResult = ESLint.LintResult;
 
 export interface ThresholdLevel {
   low: number;
@@ -140,6 +165,8 @@ export interface Legend {
 }
 
 export interface PriorityImpact {
+  scannerErrorReduction: number;
+  scannerErrorPercentage: number;
   securityReduction: number;
   securityPercentage: number;
   maintainabilityReduction: number;
@@ -169,10 +196,15 @@ export interface ScanJsonOutput {
     tool: string;
     version: string;
     targetPath: string;
+    configurationVersion: number;
+    configurationFingerprint: string;
+    pluginVersions: Record<string, string>;
   };
   options: {
     scanGitChanges: boolean;
     excludes: string[];
+    profiles: ProfileName[];
+    effectiveRules: number;
   };
   totals: Totals;
   priorities: PrioritiesResult;
