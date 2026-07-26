@@ -1,27 +1,42 @@
 import path from "path";
 import { DEFAULT_PATH } from "../constants.js";
 import { UserError } from "../errors.js";
-import type { CliArgs } from "../types.js";
+import { PROFILE_NAMES, type CliArgs, type ProfileName } from "../types.js";
 
-const KNOWN_FLAGS = new Set([
-  "--legend",
-  "--list-issues",
-  "--scan-git-changes",
-  "--help", "-h",
-  "--version", "-v",
-  "--save-as-json",
-  "--exclude", "-e",
-]);
+type BooleanCliProperty = "showLegend" | "scanGitChanges" | "listIssues" | "help" | "version";
+type ValueFlag = "saveAsJson" | "exclude" | "profile";
 
-function isKnownFlag(arg: string): boolean {
-  if (KNOWN_FLAGS.has(arg)) return true;
-  if (arg.startsWith("--save-as-json=")) return true;
-  if (arg.startsWith("--exclude=")) return true;
-  return false;
+interface ParsedOption {
+  name: string;
+  inlineValue?: string;
 }
 
-export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliArgs {
-  const result: CliArgs = {
+interface RequiredValue {
+  value: string;
+  consumedArguments: number;
+}
+
+const BOOLEAN_FLAGS: Record<string, BooleanCliProperty> = {
+  "--legend": "showLegend",
+  "--list-issues": "listIssues",
+  "--scan-git-changes": "scanGitChanges",
+  "--help": "help",
+  "-h": "help",
+  "--version": "version",
+  "-v": "version",
+};
+
+const VALUE_FLAGS: Record<string, ValueFlag> = {
+  "--save-as-json": "saveAsJson",
+  "--exclude": "exclude",
+  "-e": "exclude",
+  "--profile": "profile",
+  "-p": "profile",
+};
+
+/** Creates the default state used before command-line arguments are applied. */
+function createDefaultArguments(): CliArgs {
+  return {
     targetPath: DEFAULT_PATH,
     showLegend: false,
     excludes: [],
@@ -30,58 +45,110 @@ export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliArgs {
     saveAsJson: null,
     help: false,
     version: false,
+    profiles: [],
   };
+}
 
+/** Splits a long option from an optional inline `=value`. */
+function parseOption(argument: string): ParsedOption {
+  const equalsIndex = argument.indexOf("=");
+  return equalsIndex < 0
+    ? { name: argument }
+    : {
+        name: argument.slice(0, equalsIndex),
+        inlineValue: argument.slice(equalsIndex + 1),
+      };
+}
+
+/** Resolves a required inline or following option value. */
+function readRequiredValue(
+  option: ParsedOption,
+  nextArgument: string | undefined,
+  errorMessage: string,
+): RequiredValue {
+  if (option.inlineValue !== undefined) {
+    if (option.inlineValue.length === 0) throw new UserError(errorMessage);
+    return { value: option.inlineValue, consumedArguments: 0 };
+  }
+  if (nextArgument?.startsWith("-") === false) {
+    return { value: nextArgument, consumedArguments: 1 };
+  }
+  throw new UserError(errorMessage);
+}
+
+/** Validates and returns a configured scanner profile name. */
+function parseProfile(value: string): ProfileName {
+  if (!(PROFILE_NAMES as readonly string[]).includes(value)) {
+    throw new UserError(`Unknown profile: ${value || "<empty>"}`);
+  }
+  return value as ProfileName;
+}
+
+/** Applies an option that requires a value and returns consumed arguments. */
+function applyValueOption(
+  result: CliArgs,
+  flag: ValueFlag,
+  option: ParsedOption,
+  nextArgument: string | undefined,
+): number {
+  const errorMessages: Record<ValueFlag, string> = {
+    saveAsJson: "--save-as-json requires a file path",
+    exclude: `${option.name} requires a non-empty glob pattern`,
+    profile: `${option.name} requires a profile name`,
+  };
+  const required = readRequiredValue(option, nextArgument, errorMessages[flag]);
+
+  if (flag === "saveAsJson") result.saveAsJson = required.value;
+  if (flag === "exclude") result.excludes.push(required.value);
+  if (flag === "profile") result.profiles.push(parseProfile(required.value));
+  return required.consumedArguments;
+}
+
+/** Applies a positional target path while enforcing the single-path contract. */
+function applyTargetPath(
+  result: CliArgs,
+  argument: string,
+  positionalPath: string | undefined,
+): string {
+  if (positionalPath !== undefined) {
+    throw new UserError(`Only one target path may be provided: ${positionalPath}, ${argument}`);
+  }
+  result.targetPath = path.isAbsolute(argument) ? argument : path.resolve(process.cwd(), argument);
+  return argument;
+}
+
+/** Parses command-line arguments into scanner options. */
+export function parseCliArgs(argv: string[] = process.argv.slice(2)): CliArgs {
+  const result = createDefaultArguments();
   const unknownFlags: string[] = [];
+  let positionalPath: string | undefined;
 
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-
-    if (arg === "--legend") {
-      result.showLegend = true;
-    } else if (arg === "--list-issues") {
-      result.listIssues = true;
-    } else if (arg === "--scan-git-changes") {
-      result.scanGitChanges = true;
-    } else if (arg === "--help" || arg === "-h") {
-      result.help = true;
-    } else if (arg === "--version" || arg === "-v") {
-      result.version = true;
-    } else if (arg === "--save-as-json") {
-      if (i + 1 < argv.length && !argv[i + 1].startsWith("-")) {
-        result.saveAsJson = argv[i + 1];
-        i++;
-      } else {
-        throw new UserError("--save-as-json requires a file path");
-      }
-    } else if (arg.startsWith("--save-as-json=")) {
-      const value = arg.slice("--save-as-json=".length);
-      if (!value) {
-        throw new UserError("--save-as-json requires a file path");
-      }
-      result.saveAsJson = value;
-    } else if (arg === "--exclude" || arg === "-e") {
-      if (i + 1 < argv.length && !argv[i + 1].startsWith("-")) {
-        result.excludes.push(argv[i + 1]);
-        i++;
-      }
-    } else if (arg.startsWith("--exclude=")) {
-      result.excludes.push(arg.slice("--exclude=".length));
-    } else if (arg.startsWith("-")) {
-      if (!isKnownFlag(arg)) {
-        unknownFlags.push(arg);
-      }
-    } else {
-      const resolvedPath = path.isAbsolute(arg)
-        ? arg
-        : path.resolve(process.cwd(), arg);
-      result.targetPath = resolvedPath;
+  for (let index = 0; index < argv.length; index++) {
+    const argument = argv[index];
+    if (!argument.startsWith("-")) {
+      positionalPath = applyTargetPath(result, argument, positionalPath);
+      continue;
     }
+
+    const option = parseOption(argument);
+    const booleanProperty = BOOLEAN_FLAGS[option.name];
+    if (booleanProperty !== undefined && option.inlineValue === undefined) {
+      result[booleanProperty] = true;
+      continue;
+    }
+
+    const valueFlag = VALUE_FLAGS[option.name];
+    if (valueFlag !== undefined) {
+      index += applyValueOption(result, valueFlag, option, argv[index + 1]);
+      continue;
+    }
+    unknownFlags.push(argument);
   }
 
   if (unknownFlags.length > 0) {
-    throw new UserError(`Unknown option(s): ${unknownFlags.join(", ")}\nRun with --help for usage.`);
+    throw new UserError(
+      `Unknown option(s): ${unknownFlags.join(", ")}\nRun with --help for usage.`,
+    );
   }
-
   return result;
 }

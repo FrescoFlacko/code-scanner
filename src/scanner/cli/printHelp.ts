@@ -6,7 +6,7 @@ USAGE
   code-scanner [path] [options]
 
 ARGUMENTS
-  path                    Directory or file to scan (default: ./src)
+  path                    Directory to scan (default: ./src)
 
 OPTIONS
   --list-issues           Show detailed list of all issues per file
@@ -14,6 +14,7 @@ OPTIONS
   --scan-git-changes      Only scan files modified in git
   --exclude, -e <pattern> Exclude files matching glob pattern (can be used multiple times)
                           Examples: "*.test.ts", "**/node_modules/**", "src/generated/*"
+  --profile, -p <name>    Add a profile: generic, typed, node, browser, react, lambda, angular, strict
   --legend                Show metric explanations after the report
   --version, -v           Show version number
   --help, -h              Show this help message

@@ -2,13 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import type { ScanJsonOutput } from "../types.js";
 
-export async function writeJsonOutput(
-  filePath: string,
-  data: ScanJsonOutput
-): Promise<void> {
-  const absolutePath = path.isAbsolute(filePath)
-    ? filePath
-    : path.resolve(process.cwd(), filePath);
+export async function writeJsonOutput(filePath: string, data: ScanJsonOutput): Promise<void> {
+  const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
 
   const dir = path.dirname(absolutePath);
   await fs.mkdir(dir, { recursive: true });

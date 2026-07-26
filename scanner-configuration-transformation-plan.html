@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Code Scanner Configuration Transformation Plan</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; line-height: 1.55; }
+    body { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    h1, h2, h3 { line-height: 1.2; }
+    h2 { margin-top: 2.4rem; border-bottom: 1px solid #8886; padding-bottom: .4rem; }
+    code, pre { background: #8882; border-radius: .3rem; }
+    code { padding: .1rem .3rem; } pre { padding: 1rem; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #8886; padding: .65rem; text-align: left; vertical-align: top; }
+    .summary { padding: 1rem; border-left: .4rem solid #1971c2; background: #1971c218; }
+    .decision { padding: 1rem; border-left: .4rem solid #2b8a3e; background: #2b8a3e18; }
+    .warning { padding: 1rem; border-left: .4rem solid #e67700; background: #e6770018; }
+    li { margin: .35rem 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Scanner configuration transformation plan</h1>
+  <p>Prepared <time datetime="2026-07-11">July 11, 2026</time>.</p>
+  <p class="summary"><strong>Goal:</strong> replace the current “enable every rule” configuration with a low-noise portable core, explicit Lambda and Angular profiles, a metrics-only layer, and versioned rule metadata that fails visibly when SonarJS changes.</p>
+
+  <h2>Target outcome</h2>
+  <table>
+    <thead><tr><th>Concern</th><th>Current behavior</th><th>Target behavior</th></tr></thead>
+    <tbody>
+      <tr><td>SonarJS upgrades</td><td>Manual category set plus every exported rule enabled</td><td>Versioned manifest, generated inventory, compatibility test, and deliberate review of added/removed rules</td></tr>
+      <tr><td>Restrictions</td><td>Zero thresholds and all rules count as defects</td><td>Metrics are measurements; violations use reasonable defaults and confidence tiers</td></tr>
+      <tr><td>Backend/Lambda</td><td>Generic module parser with unrelated AWS rules always active</td><td>Node/Lambda profile with runtime globals, handler patterns, serverless security, and deployment-aware exclusions</td></tr>
+      <tr><td>Angular</td><td>TS/TSX parser only; no Angular template analysis</td><td>Angular TypeScript and HTML template configuration using angular-eslint processors/parsers</td></tr>
+      <tr><td>Other repositories</td><td>One rigid configuration</td><td>Portable recommended profile plus optional, explicit profile composition</td></tr>
+      <tr><td>CI use</td><td>Grades dominated by noisy warnings</td><td>Baseline/advisory mode first; stable high-confidence gates later</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Architecture</h2>
+  <p class="decision"><strong>Key decision:</strong> profiles are explicit configuration contracts. Detection may recommend a profile, but must not silently change enabled rules. A scan artifact must record the selected profiles, versions, effective rules, options, and ignores.</p>
+
+  <h3>1. Separate four concepts</h3>
+  <ol>
+    <li><strong>Rule inventory:</strong> what rules installed plugins expose.</li>
+    <li><strong>Rule classification:</strong> security, correctness, maintainability, cleanliness, policy, framework, or metric.</li>
+    <li><strong>Profiles:</strong> which classified rules apply in a given runtime/framework.</li>
+    <li><strong>Scoring:</strong> how findings and measurements affect grades, priorities, and CI.</li>
+  </ol>
+  <p>Today these concepts are collapsed into <code>scanner.config.ts</code>. Each should have one owner and tests.</p>
+
+  <h3>2. Proposed source layout</h3>
+  <pre><code>src/scanner/config/
+  schema.ts                    # runtime-validated public config contract
+  resolveConfig.ts             # deterministic profile + override composition
+  ruleInventory.ts             # installed plugin inventory
+  manifests/
+    sonarjs-4.json              # reviewed classification and compatibility data
+  profiles/
+    recommended.ts             # generic low-noise JS/TS baseline
+    metrics.ts                 # measurement rules, excluded from issue totals
+    strict.ts                  # opt-in maintainability expansion
+    security.ts                # high-confidence portable security
+    node.ts                    # Node runtime globals/module semantics
+    lambda.ts                  # Lambda/serverless additions
+    angular.ts                 # Angular TS rules
+    angular-template.ts        # Angular HTML processor/parser/rules
+  scoring.ts                   # one canonical score/priority model</code></pre>
+
+  <h3>3. Public configuration contract</h3>
+  <pre><code>{
+  "profiles": ["recommended", "node", "lambda"],
+  "mode": "advisory",
+  "typescript": { "typeAware": "auto" },
+  "rules": {
+    "sonarjs/no-duplicate-string": ["warn", { "threshold": 5 }],
+    "sonarjs/file-header": "off"
+  },
+  "metrics": {
+    "cognitiveComplexity": true,
+    "cyclomaticComplexity": true
+  },
+  "exclude": ["**/*.generated.ts"]
+}</code></pre>
+  <p>Validate this file at the disk boundary. Reject unknown profile names, unknown rule IDs, incompatible rule options, and contradictory settings. The resolved configuration should be immutable and included in JSON output.</p>
+
+  <h2>Profile design</h2>
+  <table>
+    <thead><tr><th>Profile</th><th>Purpose</th><th>Default?</th><th>Rule policy</th></tr></thead>
+    <tbody>
+      <tr><td><code>recommended</code></td><td>Generic JS/TS correctness and high-confidence maintainability</td><td>Yes</td><td>Context-free, low false-positive rules only</td></tr>
+      <tr><td><code>metrics</code></td><td>Extract raw complexity and comment measurements</td><td>Yes</td><td>Never increment issue totals; thresholds are measurement probes</td></tr>
+      <tr><td><code>security</code></td><td>Portable security defects and clearly labeled hotspots</td><td>Yes, advisory</td><td>Separate definite vulnerabilities from review-required hotspots</td></tr>
+      <tr><td><code>strict</code></td><td>Broader maintainability standards</td><td>No</td><td>Opinionated rules and tighter thresholds</td></tr>
+      <tr><td><code>node</code></td><td>Node globals, CommonJS/ESM, process and filesystem semantics</td><td>No</td><td>Selected by explicit runtime profile</td></tr>
+      <tr><td><code>lambda</code></td><td>Serverless handler/runtime/deployment concerns</td><td>No</td><td>Composes <code>node</code> + relevant AWS/security rules</td></tr>
+      <tr><td><code>angular</code></td><td>Angular TypeScript components, services, DI, lifecycle</td><td>No</td><td>Uses matching angular-eslint major and recommended configs</td></tr>
+      <tr><td><code>angular-template</code></td><td>Inline/external HTML templates</td><td>With Angular</td><td>Uses Angular template parser/processor and template rules</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Generic recommended profile</h3>
+  <ul>
+    <li>Start from plugin-maintained recommended configurations where stable, then pin explicit deltas.</li>
+    <li>Exclude policy rules such as file headers, naming conventions, formatting, framework assumptions, and cloud-provider rules.</li>
+    <li>Use practical violation thresholds, for example cognitive complexity around 15 and cyclomatic complexity around 10–15, validated against representative repositories.</li>
+    <li>Do not treat low comment ratio as a universal defect; report it as information unless a project opts into documentation policy.</li>
+    <li>Classify unreviewed new rules as <code>unclassified</code> and keep them disabled.</li>
+  </ul>
+
+  <h3>Lambda profile</h3>
+  <ul>
+    <li>Compose the generic, security, and Node profiles rather than duplicating their rules.</li>
+    <li>Support both ESM and CommonJS based on explicit config/package metadata.</li>
+    <li>Apply Lambda-specific guidance: thin handlers, initialization outside the handler where appropriate, controlled dependencies, async completion, and typed event/context contracts.</li>
+    <li>Enable only relevant AWS rules; infrastructure-as-code rules should apply to CDK/CloudFormation source patterns, not ordinary handler files.</li>
+    <li>Add purpose-built checks only when they are reliably AST-detectable: unawaited async work, callback/promise mixing, secrets in environment fallbacks, unsafe event trust, non-idempotent batch processing hotspots, and clients repeatedly created inside handlers.</li>
+    <li>Keep architectural recommendations advisory unless the project declares conventions such as handler paths.</li>
+  </ul>
+
+  <h3>Angular profile</h3>
+  <ul>
+    <li>Use the angular-eslint package matching the Angular major version.</li>
+    <li>Lint <code>.ts</code> with TypeScript/Angular rules and <code>.html</code> with <code>@angular-eslint/template-parser</code>.</li>
+    <li>Support inline templates through the official processor.</li>
+    <li>Scope component/directive selector and naming policies to explicit project configuration; do not invent defaults for existing repositories.</li>
+    <li>Separate app, library, spec, generated API client, and template overrides using flat-config <code>files</code>/<code>ignores</code>.</li>
+    <li>Prefer Angular’s recommended configurations as a version-aligned base, with scanner-specific categorization layered on top.</li>
+  </ul>
+
+  <h2>SonarJS upgrade portability</h2>
+  <ol>
+    <li><strong>Generate inventory:</strong> extract every installed rule ID, metadata, docs URL, schema, defaults, deprecation state, and plugin version.</li>
+    <li><strong>Compare with reviewed manifest:</strong> CI fails when a rule is added, removed, renamed, deprecated, or changes schema/default options.</li>
+    <li><strong>Default-deny new rules:</strong> new rules remain disabled and <code>unclassified</code> until reviewed.</li>
+    <li><strong>Record rationale:</strong> every enabled rule has profile membership, category, confidence, default severity, option values, and a short reason.</li>
+    <li><strong>Test real fixtures:</strong> each enabled rule needs at least one positive or curated representative fixture; profiles need clean-repository golden tests.</li>
+    <li><strong>Version manifests by plugin major:</strong> avoid one growing compatibility map with conditionals.</li>
+    <li><strong>Automate upgrade PR evidence:</strong> attach inventory diff, fixture changes, finding-count delta, runtime change, and false-positive review.</li>
+  </ol>
+  <p class="warning">Do not infer security classification from English rule descriptions. Prefer reviewed manifest data tied to rule IDs and upstream documentation; fail visibly when the inventory drifts.</p>
+
+  <h2>Scoring and restriction changes</h2>
+  <ul>
+    <li>Introduce finding confidence: <code>error</code>, <code>warning</code>, <code>hotspot</code>, <code>policy</code>, and <code>metric</code>.</li>
+    <li>Metrics do not count as issues. A separate threshold evaluator converts a measurement into a finding only when it exceeds the selected profile threshold.</li>
+    <li>Security hotspots require review and should not automatically be labeled confirmed vulnerabilities.</li>
+    <li>Grades should use normalized rates or bounded per-file effects so large files are not punished solely for size.</li>
+    <li>CI gates initially cover scanner errors and high-confidence correctness/security only. Maintainability stays advisory until calibrated.</li>
+    <li>Offer <code>advisory</code>, <code>recommended</code>, and <code>strict</code> modes with documented semantics, not hidden threshold multipliers.</li>
+  </ul>
+
+  <h2>Implementation phases</h2>
+  <table>
+    <thead><tr><th>Phase</th><th>Deliverables</th><th>Exit criteria</th></tr></thead>
+    <tbody>
+      <tr><td>0 — Baseline</td><td>Collect current outputs from generic, Lambda, and Angular fixture repositories; tag false positives and true positives</td><td>Reviewed benchmark corpus and target noise budgets</td></tr>
+      <tr><td>1 — Contracts</td><td>Config schema, resolved-config artifact, rule inventory generator, versioned manifest</td><td>Unknown/drifted rules fail compatibility tests</td></tr>
+      <tr><td>2 — Portable core</td><td>Curated recommended/security profiles; metrics separated from findings; new scoring owner</td><td>Clean generic fixtures have near-zero irrelevant findings</td></tr>
+      <tr><td>3 — Lambda</td><td>Node/Lambda flat-config layers, handler/IaC scoping, representative event-source fixtures</td><td>Lambda corpus produces useful findings without frontend/IaC leakage</td></tr>
+      <tr><td>4 — Angular</td><td>Angular TS/template dependencies, processor, inline/external template fixtures, version compatibility matrix</td><td>Angular app and library fixtures lint TS and templates successfully</td></tr>
+      <tr><td>5 — Migration</td><td>CLI profile flags, config migration, advisory default, docs and JSON schema version</td><td>Existing users receive stable output or explicit migration guidance</td></tr>
+      <tr><td>6 — CI hardening</td><td>Upgrade inventory gate, performance budgets, golden deltas, canary scans</td><td>Plugin upgrades cannot silently change enabled rules or categories</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Testing strategy</h2>
+  <ul>
+    <li><strong>Manifest contract tests:</strong> installed inventory exactly matches the reviewed versioned manifest.</li>
+    <li><strong>Profile snapshot tests:</strong> resolved rule IDs/options for each profile are intentional and reviewable.</li>
+    <li><strong>Golden integration repositories:</strong> generic Node library, Lambda API/SQS handlers, Angular app/library/templates, mixed monorepo.</li>
+    <li><strong>Noise tests:</strong> clean idiomatic fixtures have bounded finding counts and no policy rules unless opted in.</li>
+    <li><strong>Positive tests:</strong> known security/correctness defects are detected and correctly categorized.</li>
+    <li><strong>Upgrade tests:</strong> run old and new plugin versions against the corpus and publish finding deltas.</li>
+    <li><strong>Performance tests:</strong> type-aware and template profiles have explicit time/memory budgets.</li>
+  </ul>
+
+  <h2>Success measures</h2>
+  <ul>
+    <li>At least 80% reduction in findings on clean representative repositories.</li>
+    <li>No unreviewed rule becomes enabled after a dependency upgrade.</li>
+    <li>Zero security rules silently reclassified by metadata wording changes.</li>
+    <li>Generic profile works without Angular/AWS dependencies installed.</li>
+    <li>Angular templates and Lambda handlers receive profile-specific coverage.</li>
+    <li>Scanner JSON fully records profile names, manifest/plugin versions, effective rules, options, ignores, and scoring version.</li>
+    <li>Only high-confidence scanner/correctness/security failures gate CI by default.</li>
+  </ul>
+
+  <h2>Primary references</h2>
+  <ul>
+    <li><a href="https://eslint.org/docs/latest/use/configure/configuration-files">ESLint flat configuration files</a></li>
+    <li><a href="https://github.com/SonarSource/SonarJS/tree/master/packages/jsts/src/rules">SonarJS rule source inventory</a></li>
+    <li><a href="https://github.com/angular-eslint/angular-eslint">Angular ESLint packages and compatibility guidance</a></li>
+    <li><a href="https://github.com/angular-eslint/angular-eslint/blob/main/docs/CONFIGURING_FLAT_CONFIG.md">Angular ESLint flat-config guidance</a></li>
+    <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/typescript-handler.html">AWS TypeScript Lambda handler guidance</a></li>
+    <li><a href="https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html">AWS Lambda best practices</a></li>
+  </ul>
+</main>
+</body>
+</html>

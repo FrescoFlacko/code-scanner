@@ -4,6 +4,7 @@ import type { FileReport, Totals, PriorityItem, PrioritiesResult, Grade } from "
 
 function calculatePriorityScore(file: FileReport): number {
   return (
+    file.scannerErrors * 1_000_000 +
     file.security * 100 +
     file.cognitive * 2 +
     file.cyclomatic * 2 +
@@ -13,6 +14,9 @@ function calculatePriorityScore(file: FileReport): number {
 }
 
 function determinePrimaryReason(file: FileReport): string {
+  if (file.scannerErrors > 0) {
+    return `Scanner Failed (${file.scannerErrors} operational error${file.scannerErrors > 1 ? "s" : ""})`;
+  }
   if (file.security > 0) {
     return `${file.security} Security Issue${file.security > 1 ? "s" : ""}`;
   }
@@ -30,6 +34,7 @@ function determinePrimaryReason(file: FileReport): string {
 }
 
 function calculateProjectedGrade(file: FileReport): Grade {
+  if (file.scannerErrors > 0) return "F";
   const zeroedMetrics = {
     cognitive: 0,
     cyclomatic: 0,
@@ -46,10 +51,7 @@ function safePercentage(value: number, total: number): number {
   return Math.round((value / total) * 100);
 }
 
-export function calculatePriorities(
-  report: FileReport[],
-  totals: Totals
-): PrioritiesResult {
+export function calculatePriorities(report: FileReport[], totals: Totals): PrioritiesResult {
   if (report.length === 0) {
     return { items: [], overallImprovementPct: 0 };
   }
@@ -70,6 +72,8 @@ export function calculatePriorities(
     projectedGrade: calculateProjectedGrade(file),
     primaryReason: determinePrimaryReason(file),
     impact: {
+      scannerErrorReduction: file.scannerErrors,
+      scannerErrorPercentage: safePercentage(file.scannerErrors, totals.scannerErrors),
       securityReduction: file.security,
       securityPercentage: safePercentage(file.security, totals.security),
       maintainabilityReduction: file.maintainability,
@@ -81,11 +85,15 @@ export function calculatePriorities(
   }));
 
   const totalWeightedIssues =
-    totals.security * 100 + totals.maintainability * 1.5 + totals.cleanliness * 1;
+    totals.scannerErrors * 1_000_000 +
+    totals.security * 100 +
+    totals.maintainability * 1.5 +
+    totals.cleanliness * 1;
 
   const top3WeightedIssues = top3.reduce((sum, { file }) => {
     return (
       sum +
+      file.scannerErrors * 1_000_000 +
       file.security * 100 +
       file.maintainability * 1.5 +
       file.cleanliness * 1
@@ -93,9 +101,7 @@ export function calculatePriorities(
   }, 0);
 
   const overallImprovementPct =
-    totalWeightedIssues > 0
-      ? Math.round((top3WeightedIssues / totalWeightedIssues) * 100)
-      : 0;
+    totalWeightedIssues > 0 ? Math.round((top3WeightedIssues / totalWeightedIssues) * 100) : 0;
 
   return { items, overallImprovementPct };
 }

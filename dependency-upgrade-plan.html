@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Code Scanner Dependency Upgrade Plan</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.55; }
+    body { max-width: 960px; margin: 0 auto; padding: 2rem; }
+    h1, h2 { line-height: 1.2; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .65rem; border: 1px solid #8888; text-align: left; vertical-align: top; }
+    code { padding: .1rem .3rem; border-radius: .25rem; background: #8882; }
+    .status { padding: 1rem; border-left: .35rem solid #2b8a3e; background: #2b8a3e18; }
+    .warning { padding: 1rem; border-left: .35rem solid #e67700; background: #e6770018; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Dependency upgrade and code migration plan</h1>
+    <p>Prepared on <time datetime="2026-07-11">July 11, 2026</time>.</p>
+
+    <section>
+      <h2>Current outcome</h2>
+      <p class="status">All compatible direct dependencies were upgraded to their newest published releases. <code>npm audit</code> reports zero vulnerabilities, and the project builds and type-checks successfully.</p>
+      <p>The ESLint 10, plugin, glob, Node type, and Vitest upgrades required no application-code changes. ESLint 10 requires Node 20.19 or newer, so the package engine declaration was raised to <code>&gt;=20.19.0</code>.</p>
+    </section>
+
+    <section>
+      <h2>Deferred incompatible upgrade</h2>
+      <table>
+        <thead><tr><th>Library</th><th>Installed</th><th>Newest</th><th>Reason deferred</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>TypeScript</td>
+            <td>5.9.3</td>
+            <td>7.0.2</td>
+            <td><code>typescript-eslint@8.63.0</code> declares TypeScript support only for <code>&gt;=4.8.4 &lt;6.1.0</code>. Installing TypeScript 7 now would create an unsupported peer dependency combination.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="warning">Do not force TypeScript 7 into the current dependency graph. Begin the migration after a typescript-eslint release officially supports TypeScript 7.</p>
+    </section>
+
+    <section>
+      <h2>TypeScript 7 migration steps</h2>
+      <ol>
+        <li><strong>Confirm the compatibility gate:</strong> verify the latest <code>typescript-eslint</code> and <code>@typescript-eslint/parser</code> peer ranges include TypeScript 7, and verify their Node engine requirement.</li>
+        <li><strong>Create a focused upgrade branch:</strong> update TypeScript, typescript-eslint, and its parser together; regenerate <code>package-lock.json</code> with the supported Node version.</li>
+        <li><strong>Review compiler configuration:</strong> run <code>tsc --showConfig</code>, compare TypeScript 7 defaults and removed/deprecated options with <code>tsconfig.json</code>, then make explicit configuration changes where behavior would otherwise drift.</li>
+        <li><strong>Resolve source diagnostics:</strong> run <code>npm run typecheck</code> and update code for changed standard-library types, module resolution, declaration emit, or stricter inference. Keep fixes narrowly scoped and add regression tests for behavior-affecting changes.</li>
+        <li><strong>Validate scanner integration:</strong> restore or recreate the currently absent <code>test/fixtures</code> directory, then run the complete integration suite so ESLint parser behavior is exercised against representative JavaScript and TypeScript inputs.</li>
+        <li><strong>Verify release artifacts:</strong> run build, unit tests, integration tests, <code>npm audit</code>, <code>npm ls --all</code>, and <code>npm pack --dry-run</code> under every supported Node major in CI.</li>
+        <li><strong>Release safely:</strong> document the new minimum Node version if it changes, publish as a major version if consumer-facing types or runtime behavior change, and retain the prior lockfile/tag as the rollback point.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Acceptance criteria</h2>
+      <ul>
+        <li>No npm vulnerabilities and no invalid required peer dependencies.</li>
+        <li>Type-check, build, unit tests, integration tests, and package dry-run all pass on supported Node versions.</li>
+        <li>Scanner output for the fixture corpus is unchanged unless an intentional change is documented.</li>
+        <li>No forced or legacy peer-dependency resolution flags are needed for a clean install.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

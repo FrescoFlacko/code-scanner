@@ -1,4 +1,5 @@
-export function buildScanPattern(targetPath: string): string {
-  const normalizedPath = targetPath.replace(/\\/g, "/").replace(/\/$/, "");
-  return `${normalizedPath}/**/*.{js,ts,jsx,tsx}`;
+export function buildScanPattern(includeHtml = false): string {
+  return includeHtml
+    ? "**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,html}"
+    : "**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}";
 }
