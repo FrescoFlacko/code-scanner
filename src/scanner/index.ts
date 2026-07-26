@@ -13,10 +13,7 @@ import { DEFAULT_PATH } from "./constants.js";
 import { createEslintInstance } from "./eslint/createEslintInstance.js";
 import { FileSystemError } from "./errors.js";
 import { mergeExcludes } from "./files/mergeExcludes.js";
-import {
-  DEFAULT_EXCLUDES,
-  resolveFilesToScan,
-} from "./files/resolveFilesToScan.js";
+import { DEFAULT_EXCLUDES, resolveFilesToScan } from "./files/resolveFilesToScan.js";
 import { validateTargetPath } from "./files/validateTargetPath.js";
 import { calculateTrends } from "./history/calculateTrends.js";
 import { createConfigurationFingerprint } from "./history/createConfigurationFingerprint.js";
@@ -79,9 +76,7 @@ function handleInformationalRequest(cliArgs: CliArgs): ScanResult | null {
 
 /** Resolves the default scan directory without changing explicit paths. */
 function resolveTargetPath(targetPath: string): string {
-  return targetPath === DEFAULT_PATH
-    ? path.resolve(process.cwd(), DEFAULT_PATH)
-    : targetPath;
+  return targetPath === DEFAULT_PATH ? path.resolve(process.cwd(), DEFAULT_PATH) : targetPath;
 }
 
 /** Prints the appropriate empty-scan message and returns an empty result. */
@@ -112,10 +107,7 @@ function createHistoryState(
 ): HistoryState {
   const enabled = !cliArgs.scanGitChanges && options.persistHistory !== false;
   const loaded = enabled ? loadHistory(targetPath) : null;
-  const previous =
-    loaded?.configurationFingerprint === configurationFingerprint
-      ? loaded
-      : null;
+  const previous = loaded?.configurationFingerprint === configurationFingerprint ? loaded : null;
   return {
     enabled,
     previous,
@@ -160,10 +152,7 @@ function buildJsonOutput(
 }
 
 /** Writes JSON output and returns the corresponding programmatic result. */
-async function saveJsonResult(
-  outputPath: string,
-  jsonOutput: ScanJsonOutput,
-): Promise<ScanResult> {
+async function saveJsonResult(outputPath: string, jsonOutput: ScanJsonOutput): Promise<ScanResult> {
   try {
     await writeJsonOutput(outputPath, jsonOutput);
     console.log(`✅ Saved scan results to ${outputPath}`);
@@ -224,16 +213,13 @@ export async function scan(options: ScanOptions = {}): Promise<ScanResult> {
   const informationalResult = handleInformationalRequest(cliArgs);
   if (informationalResult) return informationalResult;
 
-  const quietOutput =
-    Boolean(cliArgs.saveAsJson) || (!options.fromCli && options.quiet === true);
+  const quietOutput = Boolean(cliArgs.saveAsJson) || (!options.fromCli && options.quiet === true);
   const targetPath = resolveTargetPath(cliArgs.targetPath);
   validateTargetPath(targetPath);
 
   const config = loadConfigFile(targetPath);
   const excludes = mergeExcludes(cliArgs.excludes, config.exclude);
-  const requestedProfiles = [
-    ...new Set([...config.profiles, ...cliArgs.profiles]),
-  ];
+  const requestedProfiles = [...new Set([...config.profiles, ...cliArgs.profiles])];
   const resolved = resolveRuleConfiguration(requestedProfiles, config.rules);
   const configurationFingerprint = createConfigurationFingerprint({
     schemaVersion: RULE_MANIFEST.schemaVersion,
@@ -245,11 +231,7 @@ export async function scan(options: ScanOptions = {}): Promise<ScanResult> {
     excludes: [...DEFAULT_EXCLUDES, ...excludes],
     pluginVersions: RULE_MANIFEST.plugins,
   });
-  const eslint = createEslintInstance(
-    targetPath,
-    requestedProfiles,
-    config.rules,
-  );
+  const eslint = createEslintInstance(targetPath, requestedProfiles, config.rules);
   const files = await resolveFilesToScan({
     targetPath,
     excludes,
@@ -260,11 +242,8 @@ export async function scan(options: ScanOptions = {}): Promise<ScanResult> {
   const emptyResult = handleEmptyScan(files, cliArgs, quietOutput);
   if (emptyResult) return emptyResult;
 
-  const eslintResults: ESLintResult[] =
-    files.length === 0 ? [] : await eslint.lintFiles(files);
-  const report = sortReport(
-    buildReport(eslintResults, resolved.categories, targetPath),
-  );
+  const eslintResults: ESLintResult[] = files.length === 0 ? [] : await eslint.lintFiles(files);
+  const report = sortReport(buildReport(eslintResults, resolved.categories, targetPath));
   const totals = calculateTotals(report);
   const priorities = calculatePriorities(report, totals);
   const history = createHistoryState(
@@ -295,21 +274,11 @@ export async function scan(options: ScanOptions = {}): Promise<ScanResult> {
   if (!quietOutput) {
     printScanResult(cliArgs, report, totals, priorities, history);
   }
-  persistHistory(
-    history,
-    targetPath,
-    report,
-    totals,
-    configurationFingerprint,
-    resolved.profiles,
-  );
+  persistHistory(history, targetPath, report, totals, configurationFingerprint, resolved.profiles);
   return { report, totals, trends: history.trends || undefined };
 }
 
-export {
-  buildRuleCategorization,
-  categorizeRule,
-} from "../../scanner.config.js";
+export { buildRuleCategorization, categorizeRule } from "../../scanner.config.js";
 export type {
   CliArgs,
   FileReport,

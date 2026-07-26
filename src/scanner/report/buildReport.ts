@@ -2,13 +2,7 @@ import path from "path";
 import { categorizeRule } from "../../../scanner.config.js";
 import { calculateGrade } from "../grading/calculateGrade.js";
 import { calculateCommentRatio } from "../metrics/calculateCommentRatio.js";
-import type {
-  ESLintResult,
-  FileReport,
-  Grade,
-  Issue,
-  RuleCategories,
-} from "../types.js";
+import type { ESLintResult, FileReport, Grade, Issue, RuleCategories } from "../types.js";
 
 type LintMessage = ESLintResult["messages"][number];
 type FileMetrics = Pick<
@@ -49,11 +43,7 @@ function createMetrics(filePath: string): FileMetrics {
 }
 
 /** Adds a unique issue or increments its duplicate count. */
-function addIssue(
-  issueMap: Map<string, Issue>,
-  key: string,
-  issue: Omit<Issue, "count">,
-): void {
+function addIssue(issueMap: Map<string, Issue>, key: string, issue: Omit<Issue, "count">): void {
   const existing = issueMap.get(key);
   if (existing) existing.count++;
   else issueMap.set(key, { ...issue, count: 1 });
@@ -66,21 +56,16 @@ function recordScannerError(
   issueMap: Map<string, Issue>,
 ): boolean {
   const isScannerError =
-    message.fatal === true ||
-    (message.ruleId === null && message.severity === 2);
+    message.fatal === true || (message.ruleId === null && message.severity === 2);
   if (!isScannerError) return false;
 
   metrics.scannerErrors++;
-  addIssue(
-    issueMap,
-    `${message.line}::other::scanner-error::${message.message}`,
-    {
-      rule: "scanner-error",
-      category: "other",
-      line: message.line,
-      message: message.message,
-    },
-  );
+  addIssue(issueMap, `${message.line}::other::scanner-error::${message.message}`, {
+    rule: "scanner-error",
+    category: "other",
+    line: message.line,
+    message: message.message,
+  });
   return true;
 }
 
@@ -89,19 +74,13 @@ function recordComplexity(message: LintMessage, metrics: FileMetrics): void {
   if (message.ruleId === "complexity") {
     const match = message.message.match(/complexity of (\d+)/);
     if (match) {
-      metrics.cyclomatic = Math.max(
-        metrics.cyclomatic,
-        Number.parseInt(match[1], 10),
-      );
+      metrics.cyclomatic = Math.max(metrics.cyclomatic, Number.parseInt(match[1], 10));
     }
   }
   if (message.ruleId === "sonarjs/cognitive-complexity") {
     const match = message.message.match(/Complexity from (\d+)/);
     if (match) {
-      metrics.cognitive = Math.max(
-        metrics.cognitive,
-        Number.parseInt(match[1], 10),
-      );
+      metrics.cognitive = Math.max(metrics.cognitive, Number.parseInt(match[1], 10));
     }
   }
 }
@@ -118,16 +97,12 @@ function recordCategorizedIssue(
 
   metrics[category]++;
   const displayMessage = parseRuleMessage(message.ruleId, message.message);
-  addIssue(
-    issueMap,
-    `${message.line}::${category}::${message.ruleId}::${displayMessage}`,
-    {
-      rule: message.ruleId || "",
-      category,
-      line: message.line,
-      message: displayMessage,
-    },
-  );
+  addIssue(issueMap, `${message.line}::${category}::${message.ruleId}::${displayMessage}`, {
+    rule: message.ruleId || "",
+    category,
+    line: message.line,
+    message: displayMessage,
+  });
 }
 
 /** Sorts issues by source line and then rule identifier. */
@@ -149,8 +124,7 @@ function buildFileReport(
   let hasScannerError = false;
 
   for (const message of result.messages) {
-    hasScannerError =
-      recordScannerError(message, metrics, issueMap) || hasScannerError;
+    hasScannerError = recordScannerError(message, metrics, issueMap) || hasScannerError;
     recordComplexity(message, metrics);
     recordCategorizedIssue(message, categories, metrics, issueMap);
   }
@@ -171,7 +145,5 @@ export function buildReport(
   categories: RuleCategories,
   targetPath: string,
 ): FileReport[] {
-  return eslintResults.map((result) =>
-    buildFileReport(result, categories, targetPath),
-  );
+  return eslintResults.map((result) => buildFileReport(result, categories, targetPath));
 }

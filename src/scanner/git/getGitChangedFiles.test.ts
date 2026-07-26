@@ -16,11 +16,7 @@ function repository(): string {
   execFileSync("git", ["config", "user.name", "Scanner Test"], { cwd: root });
   return root;
 }
-function write(
-  root: string,
-  relative: string,
-  content = "export const value = 1;\n",
-): void {
+function write(root: string, relative: string, content = "export const value = 1;\n"): void {
   const destination = path.join(root, relative);
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.writeFileSync(destination, content);
@@ -30,19 +26,13 @@ function commit(root: string): void {
   execFileSync("git", ["commit", "-qm", "fixture"], { cwd: root });
 }
 afterEach(() => {
-  for (const root of repositories.splice(0))
-    fs.rmSync(root, { recursive: true, force: true });
+  for (const root of repositories.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
 describe("getGitChangedFiles", () => {
   it("returns untracked paths containing spaces, quotes, unicode, and newlines", () => {
     const root = repository();
-    const names = [
-      "with space.ts",
-      'with"quote.ts',
-      "unicodé.ts",
-      "with\nnewline.ts",
-    ];
+    const names = ["with space.ts", 'with"quote.ts', "unicodé.ts", "with\nnewline.ts"];
     for (const name of names) write(root, name);
     expect(getGitChangedFiles(root).sort()).toEqual(
       names.map((name) => path.join(root, name)).sort(),
@@ -54,10 +44,7 @@ describe("getGitChangedFiles", () => {
     write(root, "old name.ts");
     commit(root);
     execFileSync("git", ["mv", "old name.ts", "new name.ts"], { cwd: root });
-    fs.appendFileSync(
-      path.join(root, "new name.ts"),
-      "export const changed = 2;\n",
-    );
+    fs.appendFileSync(path.join(root, "new name.ts"), "export const changed = 2;\n");
     expect(getGitChangedFiles(root)).toEqual([path.join(root, "new name.ts")]);
   });
 
@@ -77,8 +64,6 @@ describe("getGitChangedFiles", () => {
     write(root, "src/inside.ts");
     fs.symlinkSync(path.join(root, "src"), requestedTarget, "dir");
 
-    expect(getGitChangedFiles(requestedTarget)).toEqual([
-      path.join(requestedTarget, "inside.ts"),
-    ]);
+    expect(getGitChangedFiles(requestedTarget)).toEqual([path.join(requestedTarget, "inside.ts")]);
   });
 });

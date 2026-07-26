@@ -14,7 +14,7 @@ type AssignmentExpression = Rule.Node & { left?: unknown; right?: unknown };
 
 function identifierName(value: unknown): string | null {
   const identifier = value as { type?: string; name?: string } | null;
-  return identifier?.type === "Identifier" ? identifier.name ?? null : null;
+  return identifier?.type === "Identifier" ? (identifier.name ?? null) : null;
 }
 
 function memberName(value: unknown): string | null {
@@ -50,10 +50,14 @@ function isHandler(node: Rule.Node, context: Rule.RuleContext): boolean {
 }
 
 function isInsideHandler(node: Rule.Node, context: Rule.RuleContext): boolean {
-  return context.sourceCode.getAncestors(node).some((ancestor) =>
-    ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(ancestor.type) &&
-      isHandler(ancestor as unknown as Rule.Node, context),
-  );
+  return context.sourceCode
+    .getAncestors(node)
+    .some(
+      (ancestor) =>
+        ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(
+          ancestor.type,
+        ) && isHandler(ancestor as unknown as Rule.Node, context),
+    );
 }
 
 const clientInHandler: Rule.RuleModule = {
@@ -61,7 +65,10 @@ const clientInHandler: Rule.RuleModule = {
     type: "suggestion",
     docs: { description: "Create reusable service clients outside Lambda handlers" },
     schema: [],
-    messages: { clientInHandler: "Create this service client outside the Lambda handler so warm invocations can reuse it." },
+    messages: {
+      clientInHandler:
+        "Create this service client outside the Lambda handler so warm invocations can reuse it.",
+    },
   },
   create(context) {
     return {
@@ -80,7 +87,10 @@ const asyncCallbackHandler: Rule.RuleModule = {
     type: "problem",
     docs: { description: "Do not mix async Lambda handlers with callback completion" },
     schema: [],
-    messages: { mixedCompletion: "This async Lambda handler also declares a callback parameter; use one completion model." },
+    messages: {
+      mixedCompletion:
+        "This async Lambda handler also declares a callback parameter; use one completion model.",
+    },
   },
   create(context) {
     function check(node: Rule.Node): void {
@@ -89,7 +99,11 @@ const asyncCallbackHandler: Rule.RuleModule = {
         context.report({ node, messageId: "mixedCompletion" });
       }
     }
-    return { FunctionDeclaration: check, FunctionExpression: check, ArrowFunctionExpression: check };
+    return {
+      FunctionDeclaration: check,
+      FunctionExpression: check,
+      ArrowFunctionExpression: check,
+    };
   },
 };
 
@@ -98,7 +112,10 @@ const sensitiveEventLogging: Rule.RuleModule = {
     type: "problem",
     docs: { description: "Review logging of complete Lambda event or request objects" },
     schema: [],
-    messages: { sensitiveLog: "Review logging of this event/request value; it may contain credentials or personal data." },
+    messages: {
+      sensitiveLog:
+        "Review logging of this event/request value; it may contain credentials or personal data.",
+    },
   },
   create(context) {
     return {
@@ -107,9 +124,12 @@ const sensitiveEventLogging: Rule.RuleModule = {
         const callee = call.callee as Member;
         if (identifierName(callee.object) !== "console") return;
         if (!["log", "info", "warn", "error", "debug"].includes(memberName(callee) ?? "")) return;
-        const sensitive = call.arguments.some((argument) =>
-          /^(event|request|record)$/.test(identifierName(argument) ?? "") ||
-          /\b(event|request|record)\.(body|headers|authorization|token|password|records?)\b/i.test(context.sourceCode.getText(argument)),
+        const sensitive = call.arguments.some(
+          (argument) =>
+            /^(event|request|record)$/.test(identifierName(argument) ?? "") ||
+            /\b(event|request|record)\.(body|headers|authorization|token|password|records?)\b/i.test(
+              context.sourceCode.getText(argument),
+            ),
         );
         if (sensitive) context.report({ node, messageId: "sensitiveLog" });
       },
@@ -132,8 +152,10 @@ const eventDerivedUrl: Rule.RuleModule = {
         const member = call.callee as Member;
         const method = memberName(member);
         const client = identifierName(member.object);
-        const isHttpCall = directCall === "fetch" ||
-          (["axios", "http", "https"].includes(client ?? "") && ["get", "post", "request"].includes(method ?? ""));
+        const isHttpCall =
+          directCall === "fetch" ||
+          (["axios", "http", "https"].includes(client ?? "") &&
+            ["get", "post", "request"].includes(method ?? ""));
         if (!isHttpCall || call.arguments.length === 0) return;
         if (/\b(event|request)\b/.test(context.sourceCode.getText(call.arguments[0]))) {
           context.report({ node, messageId: "eventUrl" });
@@ -148,14 +170,21 @@ const processExit: Rule.RuleModule = {
     type: "problem",
     docs: { description: "Do not terminate the shared Lambda runtime process" },
     schema: [],
-    messages: { processExit: "Do not call process.exit() in a Lambda handler; throw or return an error instead." },
+    messages: {
+      processExit:
+        "Do not call process.exit() in a Lambda handler; throw or return an error instead.",
+    },
   },
   create(context) {
     return {
       CallExpression(node: Rule.Node) {
         const call = node as CallNode;
         const callee = call.callee as Member;
-        if (identifierName(callee.object) === "process" && memberName(callee) === "exit" && isInsideHandler(node, context)) {
+        if (
+          identifierName(callee.object) === "process" &&
+          memberName(callee) === "exit" &&
+          isInsideHandler(node, context)
+        ) {
           context.report({ node, messageId: "processExit" });
         }
       },

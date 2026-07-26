@@ -36,10 +36,7 @@ function getAverageCommentRatio(report: FileReport[]): number {
 }
 
 /** Prints the project documentation warning when coverage is critical. */
-function printDocumentationWarning(
-  report: FileReport[],
-  averageCommentRatio: number,
-): void {
+function printDocumentationWarning(report: FileReport[], averageCommentRatio: number): void {
   if (averageCommentRatio < 5 && report.length > 0) {
     console.log(
       `⚠️  Documentation is critically missing across the project (${averageCommentRatio}% coverage).\n`,
@@ -48,10 +45,7 @@ function printDocumentationWarning(
 }
 
 /** Resolves widths for every horizontal report column. */
-function getColumnWidths(
-  terminalWidth: number,
-  hideCommentColumn: boolean,
-): ColumnWidths {
+function getColumnWidths(terminalWidth: number, hideCommentColumn: boolean): ColumnWidths {
   return {
     file: getFileColumnWidth(terminalWidth, !hideCommentColumn),
     grade: 5,
@@ -100,10 +94,7 @@ function buildRow(
   terminalWidth: number,
 ): string {
   const parts = [
-    padToDisplayWidth(
-      truncatePath(file.relativePath, widths.file),
-      widths.file,
-    ),
+    padToDisplayWidth(truncatePath(file.relativePath, widths.file), widths.file),
     padToDisplayWidth(getGradeDisplay(file.grade), widths.grade),
     padToDisplayWidth(file.cognitive.toString(), widths.cognitive),
     padToDisplayWidth(file.cyclomatic.toString(), widths.cyclomatic),
@@ -150,9 +141,7 @@ function printSummary(report: FileReport[], totals: Totals): void {
   console.log(`   Cleanliness issues: ${totals.cleanliness}`);
   console.log(`   Scanner errors: ${totals.scannerErrors}`);
   if (totals.scannerErrors > 0) {
-    console.log(
-      "   ⚠️  Results are incomplete because one or more files could not be analyzed.",
-    );
+    console.log("   ⚠️  Results are incomplete because one or more files could not be analyzed.");
   }
 }
 
@@ -175,10 +164,7 @@ function printIssues(report: FileReport[], listIssues: boolean): void {
 }
 
 /** Prints a non-wrapping vertical report when metric columns cannot fit. */
-function printVerticalReport(
-  report: FileReport[],
-  terminalWidth: number,
-): void {
+function printVerticalReport(report: FileReport[], terminalWidth: number): void {
   console.log("CODE QUALITY REPORT");
   console.log("=".repeat(Math.min(terminalWidth, 40)));
 
@@ -207,8 +193,7 @@ export function printReport(
 ): void {
   const terminalWidth = resolveTerminalWidth(options.terminalWidth);
   const averageCommentRatio = getAverageCommentRatio(report);
-  const hideCommentColumn =
-    averageCommentRatio < 5 || !canShowCommentColumn(terminalWidth);
+  const hideCommentColumn = averageCommentRatio < 5 || !canShowCommentColumn(terminalWidth);
 
   printDocumentationWarning(report, averageCommentRatio);
   if (canShowHorizontalTable(terminalWidth)) {

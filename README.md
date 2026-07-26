@@ -2,6 +2,8 @@
 
 A code quality scanning tool built on ESLint. It scans JavaScript/TypeScript source files and produces a report focused on complexity and issue categorization.
 
+See [CHANGELOG.md](./CHANGELOG.md) for release changes.
+
 ## What it does
 
 `code-scanner` runs ESLint across your project’s JS/TS files and summarizes results into:
@@ -49,6 +51,10 @@ npm run build
 Other useful scripts:
 
 ```bash
+npm run check
+npm run format
+npm run format:check
+npm run lint
 npm run typecheck
 npm test
 npm run clean
@@ -157,11 +163,7 @@ Example:
 
 ```json
 {
-  "exclude": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/*.test.ts"
-  ],
+  "exclude": ["**/node_modules/**", "**/dist/**", "**/*.test.ts"],
   "profiles": ["angular"],
   "rules": {
     "sonarjs/no-duplicate-string": ["warn", { "threshold": 5 }]

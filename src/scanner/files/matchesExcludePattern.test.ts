@@ -37,8 +37,12 @@ describe("matchesExcludePattern", () => {
     });
 
     it("matches directories at any depth", () => {
-      expect(matchesExcludePattern("node_modules/package/index.js", ["**/node_modules/**"])).toBe(true);
-      expect(matchesExcludePattern("packages/app/node_modules/dep/file.js", ["**/node_modules/**"])).toBe(true);
+      expect(matchesExcludePattern("node_modules/package/index.js", ["**/node_modules/**"])).toBe(
+        true,
+      );
+      expect(
+        matchesExcludePattern("packages/app/node_modules/dep/file.js", ["**/node_modules/**"]),
+      ).toBe(true);
     });
   });
 
@@ -56,7 +60,7 @@ describe("matchesExcludePattern", () => {
   describe("multiple patterns", () => {
     it("matches if any pattern matches", () => {
       const patterns = ["*.test.ts", "*.spec.ts", "**/__tests__/**"];
-      
+
       expect(matchesExcludePattern("unit.test.ts", patterns)).toBe(true);
       expect(matchesExcludePattern("unit.spec.ts", patterns)).toBe(true);
       expect(matchesExcludePattern("src/__tests__/unit.ts", patterns)).toBe(true);
@@ -64,7 +68,7 @@ describe("matchesExcludePattern", () => {
 
     it("does not match if no pattern matches", () => {
       const patterns = ["*.test.ts", "*.spec.ts"];
-      
+
       expect(matchesExcludePattern("src/index.ts", patterns)).toBe(false);
       expect(matchesExcludePattern("lib/utils.ts", patterns)).toBe(false);
     });
@@ -106,8 +110,12 @@ describe("matchesExcludePattern", () => {
     });
 
     it("excludes test files", () => {
-      const patterns = ["**/*.test.{ts,tsx,js,jsx}", "**/*.spec.{ts,tsx,js,jsx}", "**/__tests__/**"];
-      
+      const patterns = [
+        "**/*.test.{ts,tsx,js,jsx}",
+        "**/*.spec.{ts,tsx,js,jsx}",
+        "**/__tests__/**",
+      ];
+
       expect(matchesExcludePattern("src/utils.test.ts", patterns)).toBe(true);
       expect(matchesExcludePattern("src/utils.spec.tsx", patterns)).toBe(true);
       expect(matchesExcludePattern("src/__tests__/utils.ts", patterns)).toBe(true);
@@ -116,7 +124,7 @@ describe("matchesExcludePattern", () => {
 
     it("excludes build artifacts", () => {
       const patterns = ["dist/**", "build/**", "out/**", "*.min.js"];
-      
+
       expect(matchesExcludePattern("dist/index.js", patterns)).toBe(true);
       expect(matchesExcludePattern("build/bundle.js", patterns)).toBe(true);
       expect(matchesExcludePattern("vendor.min.js", patterns)).toBe(true);

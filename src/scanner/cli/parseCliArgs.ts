@@ -3,8 +3,7 @@ import { DEFAULT_PATH } from "../constants.js";
 import { UserError } from "../errors.js";
 import { PROFILE_NAMES, type CliArgs, type ProfileName } from "../types.js";
 
-type BooleanCliProperty =
-  "showLegend" | "scanGitChanges" | "listIssues" | "help" | "version";
+type BooleanCliProperty = "showLegend" | "scanGitChanges" | "listIssues" | "help" | "version";
 type ValueFlag = "saveAsJson" | "exclude" | "profile";
 
 interface ParsedOption {
@@ -112,13 +111,9 @@ function applyTargetPath(
   positionalPath: string | undefined,
 ): string {
   if (positionalPath !== undefined) {
-    throw new UserError(
-      `Only one target path may be provided: ${positionalPath}, ${argument}`,
-    );
+    throw new UserError(`Only one target path may be provided: ${positionalPath}, ${argument}`);
   }
-  result.targetPath = path.isAbsolute(argument)
-    ? argument
-    : path.resolve(process.cwd(), argument);
+  result.targetPath = path.isAbsolute(argument) ? argument : path.resolve(process.cwd(), argument);
   return argument;
 }
 

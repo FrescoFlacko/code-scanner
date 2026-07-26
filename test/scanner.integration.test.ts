@@ -1,36 +1,23 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-  vi,
-} from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
 import { scan } from "../src/scanner/index.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { execFileSync } from "child_process";
 import { ConfigError } from "../src/scanner/errors.js";
+import type { ScanJsonOutput } from "../src/scanner/types.js";
 
 let fixturesPath: string;
 let logSpy: ReturnType<typeof vi.spyOn>;
 
 describe("scanner integration", () => {
   beforeAll(() => {
-    fixturesPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-integration-"),
-    );
+    fixturesPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-integration-"));
     fs.writeFileSync(
       path.join(fixturesPath, "clean.ts"),
       "export function add(a: number, b: number): number { return a + b; }\n",
     );
-    fs.writeFileSync(
-      path.join(fixturesPath, "nested.ts"),
-      "export const answer = 42;\n",
-    );
+    fs.writeFileSync(path.join(fixturesPath, "nested.ts"), "export const answer = 42;\n");
   });
 
   afterAll(() => fs.rmSync(fixturesPath, { recursive: true, force: true }));
@@ -75,9 +62,7 @@ describe("scanner integration", () => {
   });
 
   it("writes a current empty JSON artifact and effective config excludes", async () => {
-    const emptyPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-empty-"),
-    );
+    const emptyPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-empty-"));
     const outputPath = path.join(emptyPath, "results.json");
     fs.writeFileSync(
       path.join(emptyPath, ".scannerrc.json"),
@@ -89,10 +74,7 @@ describe("scanner integration", () => {
       excludes: ["generated/**"],
       saveAsJson: outputPath,
     });
-    const output = JSON.parse(fs.readFileSync(outputPath, "utf8")) as Record<
-      string,
-      any
-    >;
+    const output = JSON.parse(fs.readFileSync(outputPath, "utf8")) as ScanJsonOutput;
 
     expect(result.totals).toEqual({
       security: 0,
@@ -114,16 +96,11 @@ describe("scanner integration", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     const result = await scan({ targetPath: fixturesPath });
-    const history = JSON.parse(fs.readFileSync(historyPath, "utf8")) as Record<
-      string,
-      unknown
-    >;
+    const history = JSON.parse(fs.readFileSync(historyPath, "utf8")) as Record<string, unknown>;
 
     expect(result.trends).toBeUndefined();
     expect(history.version).toBe(3);
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("Ignoring incompatible or invalid"),
-    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("Ignoring incompatible or invalid"));
     warn.mockRestore();
   });
 
@@ -163,9 +140,7 @@ describe("scanner integration", () => {
   });
 
   it("invalidates history when an Angular template override changes", async () => {
-    const angularPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-template-history-"),
-    );
+    const angularPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-template-history-"));
     fs.writeFileSync(
       path.join(angularPath, "tsconfig.json"),
       JSON.stringify({
@@ -173,14 +148,8 @@ describe("scanner integration", () => {
         include: ["*.ts"],
       }),
     );
-    fs.writeFileSync(
-      path.join(angularPath, "component.ts"),
-      "export class Component {}\n",
-    );
-    fs.writeFileSync(
-      path.join(angularPath, "component.html"),
-      "<button>Save</button>\n",
-    );
+    fs.writeFileSync(path.join(angularPath, "component.ts"), "export class Component {}\n");
+    fs.writeFileSync(path.join(angularPath, "component.html"), "<button>Save</button>\n");
     fs.writeFileSync(
       path.join(angularPath, ".scannerrc.json"),
       JSON.stringify({ profiles: ["angular"] }),
@@ -204,17 +173,9 @@ describe("scanner integration", () => {
   });
 
   it("does not compare or overwrite full history during a partial Git scan", async () => {
-    const repository = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-git-history-"),
-    );
-    fs.writeFileSync(
-      path.join(repository, "first.ts"),
-      "export const first = 1;\n",
-    );
-    fs.writeFileSync(
-      path.join(repository, "second.ts"),
-      "export const second = 2;\n",
-    );
+    const repository = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-git-history-"));
+    fs.writeFileSync(path.join(repository, "first.ts"), "export const first = 1;\n");
+    fs.writeFileSync(path.join(repository, "second.ts"), "export const second = 2;\n");
     execFileSync("git", ["init", "-q"], { cwd: repository });
     execFileSync("git", ["add", "."], { cwd: repository });
     execFileSync(
@@ -233,19 +194,14 @@ describe("scanner integration", () => {
     await scan({ targetPath: repository });
     const historyPath = path.join(repository, ".scanner-history.json");
     const baseline = fs.readFileSync(historyPath, "utf8");
-    fs.writeFileSync(
-      path.join(repository, "first.ts"),
-      "export const first = 10;\n",
-    );
+    fs.writeFileSync(path.join(repository, "first.ts"), "export const first = 10;\n");
 
     const partial = await scan({
       targetPath: repository,
       scanGitChanges: true,
     });
 
-    expect(partial.report.map((file) => file.relativePath)).toEqual([
-      "first.ts",
-    ]);
+    expect(partial.report.map((file) => file.relativePath)).toEqual(["first.ts"]);
     expect(partial.trends).toBeUndefined();
     expect(fs.readFileSync(historyPath, "utf8")).toBe(baseline);
     fs.rmSync(repository, { recursive: true, force: true });
@@ -267,15 +223,11 @@ describe("scanner integration", () => {
 
     expect(result.report).toHaveLength(2);
     expect(logSpy).not.toHaveBeenCalled();
-    expect(
-      fs.existsSync(path.join(fixturesPath, ".scanner-history.json")),
-    ).toBe(false);
+    expect(fs.existsSync(path.join(fixturesPath, ".scanner-history.json"))).toBe(false);
   });
 
   it("finds JavaScript correctness and TypeScript cleanliness defects in the generic profile", async () => {
-    const genericPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-generic-positive-"),
-    );
+    const genericPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-generic-positive-"));
     fs.writeFileSync(
       path.join(genericPath, "broken.js"),
       "export function broken() { return missingName; const unreachable = 1; }\n",
@@ -290,29 +242,18 @@ describe("scanner integration", () => {
       quiet: true,
       persistHistory: false,
     });
-    const rules = result.report.flatMap((file) =>
-      file.issues.map((issue) => issue.rule),
-    );
+    const rules = result.report.flatMap((file) => file.issues.map((issue) => issue.rule));
 
     expect(rules).toEqual(
-      expect.arrayContaining([
-        "no-undef",
-        "no-unreachable",
-        "@typescript-eslint/no-unused-vars",
-      ]),
+      expect.arrayContaining(["no-undef", "no-unreachable", "@typescript-eslint/no-unused-vars"]),
     );
     expect(rules).not.toContain("scanner-error");
     fs.rmSync(genericPath, { recursive: true, force: true });
   });
 
   it("exposes parser failures separately from code findings", async () => {
-    const invalidPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-parser-failure-"),
-    );
-    fs.writeFileSync(
-      path.join(invalidPath, "invalid.ts"),
-      "export const value: = 1;\n",
-    );
+    const invalidPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-parser-failure-"));
+    fs.writeFileSync(path.join(invalidPath, "invalid.ts"), "export const value: = 1;\n");
 
     const result = await scan({
       targetPath: invalidPath,
@@ -334,13 +275,8 @@ describe("scanner integration", () => {
   });
 
   it("recognizes Node and browser globals only when their environment profiles are selected", async () => {
-    const environmentPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-environments-"),
-    );
-    fs.writeFileSync(
-      path.join(environmentPath, "node.js"),
-      "export const cwd = process.cwd();\n",
-    );
+    const environmentPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-environments-"));
+    fs.writeFileSync(path.join(environmentPath, "node.js"), "export const cwd = process.cwd();\n");
     fs.writeFileSync(
       path.join(environmentPath, "browser.js"),
       "export const title = document.title;\n",
@@ -358,21 +294,17 @@ describe("scanner integration", () => {
       persistHistory: false,
     });
 
+    expect(generic.report.flatMap((file) => file.issues.map((issue) => issue.rule))).toContain(
+      "no-undef",
+    );
     expect(
-      generic.report.flatMap((file) => file.issues.map((issue) => issue.rule)),
-    ).toContain("no-undef");
-    expect(
-      configured.report.flatMap((file) =>
-        file.issues.map((issue) => issue.rule),
-      ),
+      configured.report.flatMap((file) => file.issues.map((issue) => issue.rule)),
     ).not.toContain("no-undef");
     fs.rmSync(environmentPath, { recursive: true, force: true });
   });
 
   it("detects typed promise handling and React hook defects in opt-in profiles", async () => {
-    const applicationPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-typed-react-"),
-    );
+    const applicationPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-typed-react-"));
     fs.writeFileSync(
       path.join(applicationPath, "tsconfig.json"),
       JSON.stringify({
@@ -404,9 +336,7 @@ describe("scanner integration", () => {
       quiet: true,
       persistHistory: false,
     });
-    const rules = result.report.flatMap((file) =>
-      file.issues.map((issue) => issue.rule),
-    );
+    const rules = result.report.flatMap((file) => file.issues.map((issue) => issue.rule));
 
     expect(rules).toEqual(
       expect.arrayContaining([
@@ -428,10 +358,7 @@ describe("scanner integration", () => {
         rules: { "@typescript-eslint/no-floating-promises": "warn" },
       }),
     );
-    fs.writeFileSync(
-      path.join(applicationPath, "application.ts"),
-      "export const answer = 42;\n",
-    );
+    fs.writeFileSync(path.join(applicationPath, "application.ts"), "export const answer = 42;\n");
 
     await expect(
       scan({
@@ -444,13 +371,8 @@ describe("scanner integration", () => {
   });
 
   it("scans Angular TypeScript and HTML templates with the explicit profile", async () => {
-    const angularPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-angular-"),
-    );
-    fs.writeFileSync(
-      path.join(angularPath, "component.ts"),
-      "export class ExampleComponent {}\n",
-    );
+    const angularPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-angular-"));
+    fs.writeFileSync(path.join(angularPath, "component.ts"), "export class ExampleComponent {}\n");
     fs.writeFileSync(
       path.join(angularPath, "component.html"),
       '<button type="button">Save</button>\n',
@@ -483,9 +405,7 @@ describe("scanner integration", () => {
   });
 
   it("detects Angular security, typed reliability, cleanliness, and template defects while ignoring generated findings", async () => {
-    const angularPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-angular-positive-"),
-    );
+    const angularPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-angular-positive-"));
     fs.writeFileSync(
       path.join(angularPath, "tsconfig.json"),
       JSON.stringify({
@@ -509,10 +429,7 @@ describe("scanner integration", () => {
         "declare function withNoXsrfProtection(): void;",
       ].join("\n"),
     );
-    fs.writeFileSync(
-      path.join(angularPath, "unsafe.html"),
-      "<button>Save</button>\n",
-    );
+    fs.writeFileSync(path.join(angularPath, "unsafe.html"), "<button>Save</button>\n");
     fs.mkdirSync(path.join(angularPath, "generated"));
     fs.writeFileSync(
       path.join(angularPath, "generated", "client.ts"),
@@ -529,12 +446,8 @@ describe("scanner integration", () => {
       quiet: true,
       persistHistory: false,
     });
-    const rules = result.report.flatMap((file) =>
-      file.issues.map((issue) => issue.rule),
-    );
-    const generated = result.report.find(
-      (file) => file.relativePath === "generated/client.ts",
-    );
+    const rules = result.report.flatMap((file) => file.issues.map((issue) => issue.rule));
+    const generated = result.report.find((file) => file.relativePath === "generated/client.ts");
     const generatedTemplate = result.report.find(
       (file) => file.relativePath === "generated/client.html",
     );
@@ -556,9 +469,7 @@ describe("scanner integration", () => {
   });
 
   it("applies Angular template overrides to the HTML linting scope", async () => {
-    const angularPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-angular-override-"),
-    );
+    const angularPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-angular-override-"));
     fs.writeFileSync(
       path.join(angularPath, ".scannerrc.json"),
       JSON.stringify({
@@ -573,23 +484,15 @@ describe("scanner integration", () => {
         include: ["*.ts"],
       }),
     );
-    fs.writeFileSync(
-      path.join(angularPath, "component.ts"),
-      "export class ExampleComponent {}\n",
-    );
-    fs.writeFileSync(
-      path.join(angularPath, "component.html"),
-      "<button>Save</button>\n",
-    );
+    fs.writeFileSync(path.join(angularPath, "component.ts"), "export class ExampleComponent {}\n");
+    fs.writeFileSync(path.join(angularPath, "component.html"), "<button>Save</button>\n");
 
     const result = await scan({
       targetPath: angularPath,
       quiet: true,
       persistHistory: false,
     });
-    const rules = result.report.flatMap((file) =>
-      file.issues.map((issue) => issue.rule),
-    );
+    const rules = result.report.flatMap((file) => file.issues.map((issue) => issue.rule));
 
     expect(rules).not.toContain("@angular-eslint/template/button-has-type");
     expect(rules).not.toContain("scanner-error");
@@ -597,9 +500,7 @@ describe("scanner integration", () => {
   });
 
   it("composes Angular and Lambda JavaScript rules without dropping Lambda findings", async () => {
-    const applicationPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-angular-lambda-"),
-    );
+    const applicationPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-angular-lambda-"));
     fs.writeFileSync(
       path.join(applicationPath, "handler.js"),
       [
@@ -618,9 +519,7 @@ describe("scanner integration", () => {
       quiet: true,
       persistHistory: false,
     });
-    const rules = result.report.flatMap((file) =>
-      file.issues.map((issue) => issue.rule),
-    );
+    const rules = result.report.flatMap((file) => file.issues.map((issue) => issue.rule));
 
     expect(rules).toEqual(
       expect.arrayContaining([
@@ -649,10 +548,7 @@ describe("scanner integration", () => {
         include: ["main.ts"],
       }),
     );
-    fs.writeFileSync(
-      path.join(applicationPath, "main.ts"),
-      "export const main = 1;\n",
-    );
+    fs.writeFileSync(path.join(applicationPath, "main.ts"), "export const main = 1;\n");
     for (const extension of extensions) {
       fs.writeFileSync(
         path.join(applicationPath, `example-${extension}.spec.${extension}`),
@@ -663,10 +559,7 @@ describe("scanner integration", () => {
         "const configValue = 1;\n",
       );
       fs.writeFileSync(
-        path.join(
-          applicationPath,
-          `client-${extension}.generated.${extension}`,
-        ),
+        path.join(applicationPath, `client-${extension}.generated.${extension}`),
         "const generatedValue = 1;\n",
       );
     }
@@ -686,16 +579,12 @@ describe("scanner integration", () => {
 
     expect(scannerErrors).toEqual([]);
     expect(generatedReports).toHaveLength(extensions.length);
-    expect(generatedReports.every((file) => file.issues.length === 0)).toBe(
-      true,
-    );
+    expect(generatedReports.every((file) => file.issues.length === 0)).toBe(true);
     fs.rmSync(applicationPath, { recursive: true, force: true });
   });
 
   it("detects Lambda runtime, security, typed reliability, and cleanliness defects", async () => {
-    const lambdaPath = fs.mkdtempSync(
-      path.join(os.tmpdir(), "code-scanner-lambda-positive-"),
-    );
+    const lambdaPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-lambda-positive-"));
     fs.writeFileSync(
       path.join(lambdaPath, "tsconfig.json"),
       JSON.stringify({
@@ -730,9 +619,7 @@ describe("scanner integration", () => {
       quiet: true,
       persistHistory: false,
     });
-    const rules = result.report.flatMap((file) =>
-      file.issues.map((issue) => issue.rule),
-    );
+    const rules = result.report.flatMap((file) => file.issues.map((issue) => issue.rule));
 
     expect(rules).toEqual(
       expect.arrayContaining([
@@ -746,9 +633,7 @@ describe("scanner integration", () => {
       ]),
     );
     expect(
-      rules.filter(
-        (rule) => rule === "code-scanner-lambda/no-event-derived-outbound-url",
-      ),
+      rules.filter((rule) => rule === "code-scanner-lambda/no-event-derived-outbound-url"),
     ).toHaveLength(1);
     fs.rmSync(lambdaPath, { recursive: true, force: true });
   });

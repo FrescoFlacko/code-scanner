@@ -38,10 +38,7 @@ function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function hasFiniteNumbers(
-  value: unknown,
-  keys: readonly string[],
-): value is JsonObject {
+function hasFiniteNumbers(value: unknown, keys: readonly string[]): value is JsonObject {
   return isObject(value) && keys.every((key) => Number.isFinite(value[key]));
 }
 
@@ -71,8 +68,7 @@ function hasValidProfiles(value: JsonObject): boolean {
     Array.isArray(value.profiles) &&
     value.profiles.every(
       (profile) =>
-        typeof profile === "string" &&
-        (PROFILE_NAMES as readonly string[]).includes(profile),
+        typeof profile === "string" && (PROFILE_NAMES as readonly string[]).includes(profile),
     )
   );
 }
@@ -136,9 +132,7 @@ export function loadHistory(targetPath: string): HistoryData | null {
     const content = fs.readFileSync(historyPath, "utf-8");
     const parsed: unknown = JSON.parse(content);
     if (!isHistoryData(parsed)) {
-      console.warn(
-        `⚠️  Warning: Ignoring incompatible or invalid ${HISTORY_FILENAME}`,
-      );
+      console.warn(`⚠️  Warning: Ignoring incompatible or invalid ${HISTORY_FILENAME}`);
       return null;
     }
     return parsed;

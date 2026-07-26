@@ -43,11 +43,24 @@ describe("calculatePriorities", () => {
   describe("sorting by score", () => {
     it("prioritizes incomplete scans above code-quality findings", () => {
       const files = [
-        createMockFile({ file: "security.ts", relativePath: "security.ts", security: 20, grade: "F" }),
-        createMockFile({ file: "unscanned.ts", relativePath: "unscanned.ts", scannerErrors: 1, grade: "F" }),
+        createMockFile({
+          file: "security.ts",
+          relativePath: "security.ts",
+          security: 20,
+          grade: "F",
+        }),
+        createMockFile({
+          file: "unscanned.ts",
+          relativePath: "unscanned.ts",
+          scannerErrors: 1,
+          grade: "F",
+        }),
       ];
 
-      const result = calculatePriorities(files, createMockTotals({ security: 20, scannerErrors: 1 }));
+      const result = calculatePriorities(
+        files,
+        createMockTotals({ security: 20, scannerErrors: 1 }),
+      );
 
       expect(result.items[0]).toMatchObject({
         file: "unscanned.ts",
@@ -61,8 +74,18 @@ describe("calculatePriorities", () => {
     it("sorts files by priority score descending", () => {
       const files = [
         createMockFile({ file: "low.ts", relativePath: "low.ts", security: 0, maintainability: 5 }),
-        createMockFile({ file: "high.ts", relativePath: "high.ts", security: 5, maintainability: 10 }),
-        createMockFile({ file: "medium.ts", relativePath: "medium.ts", security: 2, maintainability: 8 }),
+        createMockFile({
+          file: "high.ts",
+          relativePath: "high.ts",
+          security: 5,
+          maintainability: 10,
+        }),
+        createMockFile({
+          file: "medium.ts",
+          relativePath: "medium.ts",
+          security: 2,
+          maintainability: 8,
+        }),
       ];
       const totals = createMockTotals({ security: 7, maintainability: 23 });
 
@@ -166,9 +189,7 @@ describe("calculatePriorities", () => {
     });
 
     it("handles zero totals without division by zero", () => {
-      const files = [
-        createMockFile({ file: "a.ts", relativePath: "a.ts" }),
-      ];
+      const files = [createMockFile({ file: "a.ts", relativePath: "a.ts" })];
       const totals = createMockTotals({ security: 0, maintainability: 0, cleanliness: 0 });
 
       const result = calculatePriorities(files, totals);
@@ -182,14 +203,14 @@ describe("calculatePriorities", () => {
   describe("projected grade", () => {
     it("projects grade A when all issues fixed", () => {
       const files = [
-        createMockFile({ 
-          file: "a.ts", 
-          relativePath: "a.ts", 
-          security: 5, 
-          maintainability: 10, 
+        createMockFile({
+          file: "a.ts",
+          relativePath: "a.ts",
+          security: 5,
+          maintainability: 10,
           cognitive: 20,
           cyclomatic: 15,
-          grade: "F" 
+          grade: "F",
         }),
       ];
       const totals = createMockTotals({ security: 5, maintainability: 10 });
@@ -204,7 +225,14 @@ describe("calculatePriorities", () => {
   describe("overall improvement percentage", () => {
     it("calculates overall improvement from top 3", () => {
       const files = [
-        createMockFile({ file: "a.ts", relativePath: "a.ts", security: 10, maintainability: 10, cleanliness: 10, grade: "F" }),
+        createMockFile({
+          file: "a.ts",
+          relativePath: "a.ts",
+          security: 10,
+          maintainability: 10,
+          cleanliness: 10,
+          grade: "F",
+        }),
       ];
       const totals = createMockTotals({ security: 10, maintainability: 10, cleanliness: 10 });
 
@@ -214,9 +242,7 @@ describe("calculatePriorities", () => {
     });
 
     it("returns 0 when no weighted issues", () => {
-      const files = [
-        createMockFile({ file: "a.ts", relativePath: "a.ts" }),
-      ];
+      const files = [createMockFile({ file: "a.ts", relativePath: "a.ts" })];
       const totals = createMockTotals();
 
       const result = calculatePriorities(files, totals);

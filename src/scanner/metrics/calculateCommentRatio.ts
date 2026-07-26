@@ -67,21 +67,9 @@ function createCommentRangeCollector(
 }
 
 /** Collects JavaScript and TypeScript comment ranges using the TS scanner. */
-function collectScriptComments(
-  content: string,
-  addCommentRange: AddCommentRange,
-): void {
-  const scanner = ts.createScanner(
-    ts.ScriptTarget.Latest,
-    false,
-    ts.LanguageVariant.JSX,
-    content,
-  );
-  for (
-    let token = scanner.scan();
-    token !== ts.SyntaxKind.EndOfFileToken;
-    token = scanner.scan()
-  ) {
+function collectScriptComments(content: string, addCommentRange: AddCommentRange): void {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.JSX, content);
+  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
     if (COMMENT_KINDS.has(token)) {
       addCommentRange(scanner.getTokenPos(), scanner.getTextPos() - 1);
     }
@@ -105,10 +93,7 @@ function updateHtmlScanState(state: HtmlScanState, character: string): void {
 }
 
 /** Collects HTML comments without treating comment syntax inside tags as markup. */
-function collectHtmlComments(
-  content: string,
-  addCommentRange: AddCommentRange,
-): void {
+function collectHtmlComments(content: string, addCommentRange: AddCommentRange): void {
   let index = 0;
   const state: HtmlScanState = { inTag: false, quote: null };
 
