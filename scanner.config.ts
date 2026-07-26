@@ -249,10 +249,15 @@ export interface ResolvedRuleConfiguration {
 export const RULE_MANIFEST = {
   schemaVersion: 4,
   plugins: {
+    eslint: "10.7.0",
+    eslintJs: "10.0.1",
     sonarjs: "4.1.0",
     security: "4.0.1",
     angular: "21.4.0",
+    angularTemplate: "21.4.0",
+    angularTemplateParser: "21.4.0",
     typescriptEslint: "8.63.0",
+    typescriptParser: "8.63.0",
     reactHooks: "7.1.1",
     globals: "17.7.0",
   },
