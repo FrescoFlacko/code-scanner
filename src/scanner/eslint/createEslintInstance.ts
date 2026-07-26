@@ -118,7 +118,9 @@ function createGlobals(
   angularEnabled: boolean,
 ): Linter.Globals {
   return {
-    ...(resolved.profiles.includes("node") ? environmentGlobals.node : {}),
+    ...(resolved.profiles.includes("node") || resolved.profiles.includes("lambda")
+      ? environmentGlobals.node
+      : {}),
     ...(resolved.profiles.includes("browser") || reactEnabled || angularEnabled
       ? environmentGlobals.browser
       : {}),

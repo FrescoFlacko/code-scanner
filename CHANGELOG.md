@@ -26,11 +26,14 @@ All notable changes to `code-scanner` are documented in this file.
   output.
 - Improved Git change discovery for renamed, deleted, untracked, and repository-relative files.
 - Made history persistence and console output configurable for programmatic scans.
-- Added automatic builds during package preparation and raised the minimum Node.js version to
-  20.19.
+- Added automatic builds during package preparation and moved runtime support to Node.js 22.13
+  or newer in the 22.x release line, or Node.js 24 and newer.
 
 ### Fixed
 
+- Enabled Node.js globals automatically for Lambda scans to prevent false `no-undef` findings.
+- Pinned rule-defining dependencies so reported plugin versions and configuration fingerprints
+  remain accurate after installation.
 - Prevented generated files and test files from receiving inappropriate type-aware rules.
 - Prevented incompatible history records from producing misleading trend comparisons.
 - Made CLI failures return a nonzero exit code when scanner errors prevent complete analysis.

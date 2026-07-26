@@ -24,7 +24,7 @@ It scans files matching:
 
 ## Requirements
 
-- Node.js >= 20
+- Node.js 22.13 or newer in the 22.x release line, or Node.js 24 and newer
 
 ## Install (from source)
 

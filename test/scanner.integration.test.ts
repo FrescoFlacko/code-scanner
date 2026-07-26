@@ -303,6 +303,31 @@ describe("scanner integration", () => {
     fs.rmSync(environmentPath, { recursive: true, force: true });
   });
 
+  it("includes Node globals in the Lambda profile", async () => {
+    const lambdaPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-lambda-globals-"));
+    fs.writeFileSync(
+      path.join(lambdaPath, "handler.js"),
+      [
+        "exports.handler = async () => {",
+        "  console.log(process.env.AWS_REGION);",
+        '  return Buffer.from("ok");',
+        "};",
+      ].join("\n"),
+    );
+
+    const result = await scan({
+      targetPath: lambdaPath,
+      profiles: ["lambda"],
+      quiet: true,
+      persistHistory: false,
+    });
+
+    expect(result.report.flatMap((file) => file.issues.map((issue) => issue.rule))).not.toContain(
+      "no-undef",
+    );
+    fs.rmSync(lambdaPath, { recursive: true, force: true });
+  });
+
   it("detects typed promise handling and React hook defects in opt-in profiles", async () => {
     const applicationPath = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-typed-react-"));
     fs.writeFileSync(

@@ -160,22 +160,26 @@ describe("buildRuleCategorization", () => {
     const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8")) as {
       packages: Record<string, { version?: string }>;
     };
+    const packageManifest = JSON.parse(fs.readFileSync("package.json", "utf8")) as {
+      dependencies: Record<string, string>;
+    };
+    const expectedRuntimePackages = {
+      "@angular-eslint/eslint-plugin": RULE_MANIFEST.plugins.angular,
+      "@angular-eslint/eslint-plugin-template": RULE_MANIFEST.plugins.angularTemplate,
+      "@angular-eslint/template-parser": RULE_MANIFEST.plugins.angularTemplateParser,
+      "@eslint/js": RULE_MANIFEST.plugins.eslintJs,
+      "@typescript-eslint/parser": RULE_MANIFEST.plugins.typescriptParser,
+      eslint: RULE_MANIFEST.plugins.eslint,
+      "eslint-plugin-react-hooks": RULE_MANIFEST.plugins.reactHooks,
+      "eslint-plugin-security": RULE_MANIFEST.plugins.security,
+      "eslint-plugin-sonarjs": RULE_MANIFEST.plugins.sonarjs,
+      globals: RULE_MANIFEST.plugins.globals,
+      "typescript-eslint": RULE_MANIFEST.plugins.typescriptEslint,
+    };
     expect(getRuleInventory()).toEqual(RULE_MANIFEST.inventory);
-    expect(lock.packages["node_modules/eslint-plugin-sonarjs"].version).toBe(
-      RULE_MANIFEST.plugins.sonarjs,
-    );
-    expect(lock.packages["node_modules/eslint-plugin-security"].version).toBe(
-      RULE_MANIFEST.plugins.security,
-    );
-    expect(lock.packages["node_modules/@angular-eslint/eslint-plugin"].version).toBe(
-      RULE_MANIFEST.plugins.angular,
-    );
-    expect(lock.packages["node_modules/typescript-eslint"].version).toBe(
-      RULE_MANIFEST.plugins.typescriptEslint,
-    );
-    expect(lock.packages["node_modules/eslint-plugin-react-hooks"].version).toBe(
-      RULE_MANIFEST.plugins.reactHooks,
-    );
-    expect(lock.packages["node_modules/globals"].version).toBe(RULE_MANIFEST.plugins.globals);
+    for (const [packageName, version] of Object.entries(expectedRuntimePackages)) {
+      expect(packageManifest.dependencies[packageName]).toBe(version);
+      expect(lock.packages[`node_modules/${packageName}`].version).toBe(version);
+    }
   });
 });
