@@ -2,11 +2,7 @@ import fs from "fs";
 import path from "path";
 import { CONFIG_FILENAME } from "../constants.js";
 import { ConfigError } from "../errors.js";
-import {
-  PROFILE_NAMES,
-  type ProfileName,
-  type ScannerConfig,
-} from "../types.js";
+import { PROFILE_NAMES, type ProfileName, type ScannerConfig } from "../types.js";
 
 type JsonObject = Record<string, unknown>;
 
@@ -22,19 +18,14 @@ function isNonEmptyString(value: unknown): value is string {
 
 /** Returns whether a value names a supported scanner profile. */
 function isProfileName(value: unknown): value is ProfileName {
-  return (
-    typeof value === "string" &&
-    (PROFILE_NAMES as readonly string[]).includes(value)
-  );
+  return typeof value === "string" && (PROFILE_NAMES as readonly string[]).includes(value);
 }
 
 /** Reads and validates optional exclude patterns. */
 function readExcludes(value: unknown): string[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || !value.every(isNonEmptyString)) {
-    throw new ConfigError(
-      `${CONFIG_FILENAME} "exclude" must be an array of non-empty strings`,
-    );
+    throw new ConfigError(`${CONFIG_FILENAME} "exclude" must be an array of non-empty strings`);
   }
   return value;
 }
@@ -43,9 +34,7 @@ function readExcludes(value: unknown): string[] {
 function readProfiles(value: unknown): ProfileName[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || !value.every(isProfileName)) {
-    throw new ConfigError(
-      `${CONFIG_FILENAME} "profiles" contains an unknown profile`,
-    );
+    throw new ConfigError(`${CONFIG_FILENAME} "profiles" contains an unknown profile`);
   }
   return value;
 }
@@ -83,9 +72,7 @@ export function loadConfigFile(targetPath: string): ScannerConfig {
     return parseConfig(fs.readFileSync(configPath, "utf-8"));
   } catch (error) {
     if (error instanceof ConfigError) throw error;
-    console.warn(
-      `⚠️  Warning: Could not parse ${CONFIG_FILENAME}, ignoring config file`,
-    );
+    console.warn(`⚠️  Warning: Could not parse ${CONFIG_FILENAME}, ignoring config file`);
     return { exclude: [], profiles: [], rules: {} };
   }
 }

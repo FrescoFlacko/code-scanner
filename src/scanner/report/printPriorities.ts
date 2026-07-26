@@ -13,7 +13,7 @@ export function printPriorities(priorities: PrioritiesResult): void {
   }
 
   console.log(
-    `\n🔥 TOP 3 PRIORITIES (Fix these to improve overall score by ~${priorities.overallImprovementPct}%)`
+    `\n🔥 TOP 3 PRIORITIES (Fix these to improve overall score by ~${priorities.overallImprovementPct}%)`,
   );
 
   priorities.items.forEach((item, index) => {
@@ -29,19 +29,19 @@ export function printPriorities(priorities: PrioritiesResult): void {
 
     if (item.impact.securityReduction > 0) {
       impactLines.push(
-        `Would reduce security issues by ${item.impact.securityReduction} (${item.impact.securityPercentage}% of total)`
+        `Would reduce security issues by ${item.impact.securityReduction} (${item.impact.securityPercentage}% of total)`,
       );
     }
 
     if (item.impact.maintainabilityReduction > 0) {
       impactLines.push(
-        `Would reduce maintainability issues by ${item.impact.maintainabilityReduction} (${item.impact.maintainabilityPercentage}% of total)`
+        `Would reduce maintainability issues by ${item.impact.maintainabilityReduction} (${item.impact.maintainabilityPercentage}% of total)`,
       );
     }
 
     if (item.impact.cleanlinessReduction > 0) {
       impactLines.push(
-        `Would reduce cleanliness issues by ${item.impact.cleanlinessReduction} (${item.impact.cleanlinessPercentage}% of total)`
+        `Would reduce cleanliness issues by ${item.impact.cleanlinessReduction} (${item.impact.cleanlinessPercentage}% of total)`,
       );
     }
 

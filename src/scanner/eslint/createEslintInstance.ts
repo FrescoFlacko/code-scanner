@@ -2,7 +2,7 @@ import angularPlugin from "@angular-eslint/eslint-plugin";
 import angularTemplatePlugin from "@angular-eslint/eslint-plugin-template";
 import angularTemplateParser from "@angular-eslint/template-parser";
 import tsParser from "@typescript-eslint/parser";
-import { ESLint, Linter } from "eslint";
+import { ESLint, type Linter } from "eslint";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 import environmentGlobals from "globals";
 import typescriptEslint from "typescript-eslint";
@@ -65,11 +65,7 @@ function createFilePatterns(): FilePatterns {
       `**/*.generated.${allExtensions}`,
       `**/generated-api/**/*.${allExtensions}`,
     ],
-    generatedHtml: [
-      "**/generated/**/*.html",
-      "**/*.generated.html",
-      "**/generated-api/**/*.html",
-    ],
+    generatedHtml: ["**/generated/**/*.html", "**/*.generated.html", "**/generated-api/**/*.html"],
     specifications: [
       `**/*.spec.${allExtensions}`,
       `**/*.test.${allExtensions}`,
@@ -80,24 +76,18 @@ function createFilePatterns(): FilePatterns {
 }
 
 /** Composes the portable TypeScript baseline with profile-specific rules. */
-function composeTypescriptRules(
-  baseRules: Record<string, unknown>,
-): Linter.RulesRecord {
+function composeTypescriptRules(baseRules: Record<string, unknown>): Linter.RulesRecord {
   return {
     ...baseRules,
     ...UNTYPED_TYPESCRIPT_RULES,
     ...Object.fromEntries(
-      Object.entries(baseRules).filter(([ruleId]) =>
-        ruleId.startsWith("@typescript-eslint/"),
-      ),
+      Object.entries(baseRules).filter(([ruleId]) => ruleId.startsWith("@typescript-eslint/")),
     ),
   } as Linter.RulesRecord;
 }
 
 /** Removes plugin overrides that cannot run in an untyped test scope. */
-function getUntypedOverrides(
-  overrides: Record<string, unknown>,
-): Record<string, unknown> {
+function getUntypedOverrides(overrides: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(overrides).filter(
       ([ruleId]) =>
@@ -110,9 +100,7 @@ function getUntypedOverrides(
 }
 
 /** Selects rules that can execute against JavaScript files. */
-function getJavascriptRules(
-  rules: Record<string, unknown>,
-): Record<string, unknown> {
+function getJavascriptRules(rules: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(rules).filter(
       ([ruleId]) =>
@@ -172,9 +160,7 @@ function createContext(
 }
 
 /** Returns plugins shared by JavaScript configuration blocks. */
-function createJavascriptPlugins(
-  context: EslintContext,
-): Linter.Config["plugins"] {
+function createJavascriptPlugins(context: EslintContext): Linter.Config["plugins"] {
   return {
     sonarjs: sonarjsPlugin,
     security: securityPlugin,
@@ -265,10 +251,7 @@ function createTypescriptConfig(context: EslintContext): Linter.Config {
 /** Builds the untyped test and tool configuration block. */
 function createTestConfig(context: EslintContext): Linter.Config {
   return {
-    files: [
-      ...context.patterns.specifications,
-      ...context.patterns.configurations,
-    ],
+    files: [...context.patterns.specifications, ...context.patterns.configurations],
     languageOptions: {
       parser: tsParser,
       sourceType: "module",
@@ -290,21 +273,15 @@ function createGeneratedConfig(context: EslintContext): Linter.Config {
     files: context.patterns.generated,
     languageOptions: { parser: tsParser, sourceType: "module" },
     plugins: createTypescriptPlugins(context, true),
-    rules: Object.fromEntries(
-      Object.keys(allKnownRules).map((ruleId) => [ruleId, "off"]),
-    ),
+    rules: Object.fromEntries(Object.keys(allKnownRules).map((ruleId) => [ruleId, "off"])),
   };
 }
 
 /** Builds Angular template blocks for source and generated HTML. */
 function createAngularTemplateConfigs(context: EslintContext): Linter.Config[] {
-  const rules = buildAngularTemplateRules(
-    context.resolved.profiles,
-    context.overrides,
-  );
+  const rules = buildAngularTemplateRules(context.resolved.profiles, context.overrides);
   const plugins = {
-    "@angular-eslint/template":
-      angularTemplatePlugin as unknown as ESLint.Plugin,
+    "@angular-eslint/template": angularTemplatePlugin as unknown as ESLint.Plugin,
   };
   return [
     {
@@ -318,9 +295,7 @@ function createAngularTemplateConfigs(context: EslintContext): Linter.Config[] {
       files: context.patterns.generatedHtml,
       languageOptions: { parser: angularTemplateParser },
       plugins,
-      rules: Object.fromEntries(
-        Object.keys(rules).map((ruleId) => [ruleId, "off"]),
-      ),
+      rules: Object.fromEntries(Object.keys(rules).map((ruleId) => [ruleId, "off"])),
     },
   ];
 }

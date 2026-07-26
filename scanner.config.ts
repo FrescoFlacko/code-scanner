@@ -5,12 +5,7 @@ import angularTemplatePlugin from "@angular-eslint/eslint-plugin-template";
 import typescriptEslint from "typescript-eslint";
 import js from "@eslint/js";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
-import type {
-  ProfileName,
-  RuleCategories,
-  Thresholds,
-  Legend,
-} from "./src/scanner/types.js";
+import type { ProfileName, RuleCategories, Thresholds, Legend } from "./src/scanner/types.js";
 import { angularSecurityPlugin } from "./src/scanner/eslint/angularSecurityPlugin.js";
 import { lambdaPlugin } from "./src/scanner/eslint/lambdaPlugin.js";
 import { ConfigError } from "./src/scanner/errors.js";
@@ -32,32 +27,28 @@ function asWarning(configuration: unknown): unknown {
   return configuration === "off" || configuration === 0 ? "off" : "warn";
 }
 
-export const UNTYPED_TYPESCRIPT_RULES: Record<string, unknown> =
-  Object.fromEntries(
-    Object.entries(
-      Object.assign(
-        {},
-        ...typescriptEslint.configs.recommended.map(
-          (config) => config.rules ?? {},
-        ),
-      ),
-    ).map(([ruleId, configuration]) => [ruleId, asWarning(configuration)]),
-  );
+export const UNTYPED_TYPESCRIPT_RULES: Record<string, unknown> = Object.fromEntries(
+  Object.entries(
+    Object.assign({}, ...typescriptEslint.configs.recommended.map((config) => config.rules ?? {})),
+  ).map(([ruleId, configuration]) => [ruleId, asWarning(configuration)]),
+);
 // Explicit `any` is often a deliberate migration or integration boundary. It is
 // too subjective and high-volume for the portable baseline; strict teams can
 // enable it through a rule override.
 UNTYPED_TYPESCRIPT_RULES["@typescript-eslint/no-explicit-any"] = "off";
 
 const CORE_RECOMMENDED_RULES: Record<string, unknown> = Object.fromEntries(
-  Object.entries(js.configs.recommended.rules).map(
-    ([ruleId, configuration]) => [ruleId, asWarning(configuration)],
-  ),
+  Object.entries(js.configs.recommended.rules).map(([ruleId, configuration]) => [
+    ruleId,
+    asWarning(configuration),
+  ]),
 );
 
 export const REACT_RULES: Record<string, unknown> = Object.fromEntries(
-  Object.entries(reactHooksPlugin.configs.flat.recommended.rules).map(
-    ([ruleId, configuration]) => [ruleId, asWarning(configuration)],
-  ),
+  Object.entries(reactHooksPlugin.configs.flat.recommended.rules).map(([ruleId, configuration]) => [
+    ruleId,
+    asWarning(configuration),
+  ]),
 );
 
 /**
@@ -237,14 +228,8 @@ const ANGULAR_SECURITY_RULES = [
 
 const ANGULAR_TEMPLATE_ADDITIONAL_RULES: Record<string, unknown> = {
   "@angular-eslint/template/button-has-type": "warn",
-  "@angular-eslint/template/conditional-complexity": [
-    "warn",
-    { maxComplexity: 4 },
-  ],
-  "@angular-eslint/template/cyclomatic-complexity": [
-    "warn",
-    { maxComplexity: 12 },
-  ],
+  "@angular-eslint/template/conditional-complexity": ["warn", { maxComplexity: 4 }],
+  "@angular-eslint/template/cyclomatic-complexity": ["warn", { maxComplexity: 12 }],
   "@angular-eslint/template/no-duplicate-attributes": [
     "warn",
     { allowStylePrecedenceDuplicates: true },
@@ -281,10 +266,7 @@ export const RULE_MANIFEST = {
   },
 } as const;
 
-export function getRuleInventory(): Record<
-  keyof typeof RULE_MANIFEST.inventory,
-  number
-> {
+export function getRuleInventory(): Record<keyof typeof RULE_MANIFEST.inventory, number> {
   return {
     sonarjs: Object.keys(sonarjsPlugin.rules).length,
     security: Object.keys(securityPlugin.rules).length,
@@ -324,11 +306,7 @@ function addPrefixedRules(
 
 /** Adds ESLint core rules to cleanliness or maintainability categories. */
 function addCoreCategories(categories: RuleCategories): void {
-  const cleanlinessRules = [
-    "no-unused-vars",
-    "no-unreachable",
-    "no-unreachable-loop",
-  ];
+  const cleanlinessRules = ["no-unused-vars", "no-unreachable", "no-unreachable-loop"];
   for (const name of Object.keys(CORE_RULES)) {
     const category = cleanlinessRules.includes(name)
       ? categories.cleanliness
@@ -339,11 +317,7 @@ function addCoreCategories(categories: RuleCategories): void {
 
 /** Adds TypeScript rules to cleanliness or maintainability categories. */
 function addTypescriptCategories(categories: RuleCategories): void {
-  const cleanlinessRules = [
-    "no-unused-vars",
-    "no-unused-expressions",
-    "no-unnecessary-condition",
-  ];
+  const cleanlinessRules = ["no-unused-vars", "no-unused-expressions", "no-unnecessary-condition"];
   for (const name of Object.keys(TYPESCRIPT_RULES)) {
     const category = cleanlinessRules.includes(name)
       ? categories.cleanliness
@@ -354,10 +328,7 @@ function addTypescriptCategories(categories: RuleCategories): void {
 
 /** Adds Lambda plugin rules to security or maintainability categories. */
 function addLambdaCategories(categories: RuleCategories): void {
-  const securityRules = [
-    "no-sensitive-event-logging",
-    "no-event-derived-outbound-url",
-  ];
+  const securityRules = ["no-sensitive-event-logging", "no-event-derived-outbound-url"];
   for (const name of Object.keys(lambdaPlugin.rules ?? {})) {
     const category = securityRules.includes(name)
       ? categories.security
@@ -383,11 +354,7 @@ export function buildRuleCategorization(): RuleCategories {
   );
   categories.maintainability.push("complexity");
   addCoreCategories(categories);
-  addPrefixedRules(
-    categories.maintainability,
-    angularPlugin.rules,
-    "@angular-eslint/",
-  );
+  addPrefixedRules(categories.maintainability, angularPlugin.rules, "@angular-eslint/");
   addPrefixedRules(
     categories.maintainability,
     angularTemplatePlugin.rules,
@@ -400,11 +367,7 @@ export function buildRuleCategorization(): RuleCategories {
     "code-scanner-angular-security/",
   );
   addLambdaCategories(categories);
-  addPrefixedRules(
-    categories.maintainability,
-    REACT_HOOK_RULES,
-    "react-hooks/",
-  );
+  addPrefixedRules(categories.maintainability, REACT_HOOK_RULES, "react-hooks/");
   return categories;
 }
 
@@ -422,26 +385,16 @@ function validateRules(rules: Record<string, unknown>): void {
     ...Object.keys(CORE_RULES),
     ...Object.keys(sonarjsPlugin.rules).map((name) => `sonarjs/${name}`),
     ...Object.keys(securityPlugin.rules).map((name) => `security/${name}`),
-    ...Object.keys(angularPlugin.rules).map(
-      (name) => `@angular-eslint/${name}`,
-    ),
-    ...Object.keys(angularTemplatePlugin.rules).map(
-      (name) => `@angular-eslint/template/${name}`,
-    ),
-    ...Object.keys(TYPESCRIPT_RULES).map(
-      (name) => `@typescript-eslint/${name}`,
-    ),
+    ...Object.keys(angularPlugin.rules).map((name) => `@angular-eslint/${name}`),
+    ...Object.keys(angularTemplatePlugin.rules).map((name) => `@angular-eslint/template/${name}`),
+    ...Object.keys(TYPESCRIPT_RULES).map((name) => `@typescript-eslint/${name}`),
     ...Object.keys(angularSecurityPlugin.rules ?? {}).map(
       (name) => `code-scanner-angular-security/${name}`,
     ),
-    ...Object.keys(lambdaPlugin.rules ?? {}).map(
-      (name) => `code-scanner-lambda/${name}`,
-    ),
+    ...Object.keys(lambdaPlugin.rules ?? {}).map((name) => `code-scanner-lambda/${name}`),
     ...Object.keys(REACT_HOOK_RULES).map((name) => `react-hooks/${name}`),
   ]);
-  const unknown = Object.keys(rules).filter(
-    (ruleId) => !knownRules.has(ruleId),
-  );
+  const unknown = Object.keys(rules).filter((ruleId) => !knownRules.has(ruleId));
   if (unknown.length > 0)
     throw new ConfigError(`Unknown configured rule(s): ${unknown.join(", ")}`);
 }
@@ -467,33 +420,25 @@ function validateOverrideProfiles(
   const typedApplicationEnabled = profiles.some((profile) =>
     ["typed", "angular", "lambda"].includes(profile),
   );
-  const incompatible = Object.entries(overrides).flatMap(
-    ([ruleId, configuration]) => {
-      if (
-        isRuleEnabled(configuration) &&
-        isTypeAwareTypescriptRule(ruleId) &&
-        !typedApplicationEnabled
-      ) {
-        return [`${ruleId} requires the typed, angular, or lambda profile`];
-      }
-      const requirement = requirements.find(([prefix]) =>
-        ruleId.startsWith(prefix),
-      );
-      return requirement && !profiles.includes(requirement[1])
-        ? [`${ruleId} requires the ${requirement[1]} profile`]
-        : [];
-    },
-  );
+  const incompatible = Object.entries(overrides).flatMap(([ruleId, configuration]) => {
+    if (
+      isRuleEnabled(configuration) &&
+      isTypeAwareTypescriptRule(ruleId) &&
+      !typedApplicationEnabled
+    ) {
+      return [`${ruleId} requires the typed, angular, or lambda profile`];
+    }
+    const requirement = requirements.find(([prefix]) => ruleId.startsWith(prefix));
+    return requirement && !profiles.includes(requirement[1])
+      ? [`${ruleId} requires the ${requirement[1]} profile`]
+      : [];
+  });
   if (incompatible.length > 0)
-    throw new ConfigError(
-      `Profile-incompatible rule override(s): ${incompatible.join(", ")}`,
-    );
+    throw new ConfigError(`Profile-incompatible rule override(s): ${incompatible.join(", ")}`);
 }
 
 function isRuleEnabled(configuration: unknown): boolean {
-  const severity = Array.isArray(configuration)
-    ? configuration[0]
-    : configuration;
+  const severity = Array.isArray(configuration) ? configuration[0] : configuration;
   return severity !== "off" && severity !== 0;
 }
 
@@ -524,38 +469,24 @@ function addNamedRules(
 }
 
 /** Applies the optional strict-profile rules. */
-function applyStrictProfile(
-  rules: Record<string, unknown>,
-  profiles: ProfileName[],
-): void {
+function applyStrictProfile(rules: Record<string, unknown>, profiles: ProfileName[]): void {
   if (!profiles.includes("strict")) return;
   for (const name of STRICT_SONAR_RULES) {
-    const configuration =
-      name === "no-duplicate-string" ? ["warn", { threshold: 5 }] : "warn";
+    const configuration = name === "no-duplicate-string" ? ["warn", { threshold: 5 }] : "warn";
     addRule(rules, `sonarjs/${name}`, configuration);
   }
 }
 
 /** Applies Lambda security, reliability, and custom rules. */
-function applyLambdaProfile(
-  rules: Record<string, unknown>,
-  profiles: ProfileName[],
-): void {
+function applyLambdaProfile(rules: Record<string, unknown>, profiles: ProfileName[]): void {
   if (!profiles.includes("lambda")) return;
   addNamedRules(rules, LAMBDA_SECURITY_RULES, "sonarjs/");
   Object.assign(rules, TYPED_APPLICATION_RULES);
-  addNamedRules(
-    rules,
-    Object.keys(lambdaPlugin.rules ?? {}),
-    "code-scanner-lambda/",
-  );
+  addNamedRules(rules, Object.keys(lambdaPlugin.rules ?? {}), "code-scanner-lambda/");
 }
 
 /** Applies Angular framework, security, reliability, and custom rules. */
-function applyAngularProfile(
-  rules: Record<string, unknown>,
-  profiles: ProfileName[],
-): void {
+function applyAngularProfile(rules: Record<string, unknown>, profiles: ProfileName[]): void {
   if (!profiles.includes("angular")) return;
   Object.assign(rules, angularPlugin.configs.recommended.rules);
   addNamedRules(rules, ANGULAR_MAINTAINABILITY_RULES, "@angular-eslint/");
@@ -623,9 +554,7 @@ export function resolveRuleConfiguration(
     ...rules,
     ...UNTYPED_TYPESCRIPT_RULES,
     ...Object.fromEntries(
-      Object.entries(rules).filter(([ruleId]) =>
-        ruleId.startsWith("@typescript-eslint/"),
-      ),
+      Object.entries(rules).filter(([ruleId]) => ruleId.startsWith("@typescript-eslint/")),
     ),
   };
   const enabledRuleIds = new Set<string>();

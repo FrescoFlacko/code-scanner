@@ -15,23 +15,34 @@ function directoryWithConfig(config: unknown): string {
 }
 
 afterEach(() => {
-  for (const directory of temporaryDirectories.splice(0)) fs.rmSync(directory, { recursive: true, force: true });
+  for (const directory of temporaryDirectories.splice(0))
+    fs.rmSync(directory, { recursive: true, force: true });
 });
 
 describe("loadConfigFile", () => {
   it("loads valid exclude patterns", () => {
     expect(loadConfigFile(directoryWithConfig({ exclude: ["**/*.test.ts"] }))).toEqual({
-      exclude: ["**/*.test.ts"], profiles: [], rules: {},
+      exclude: ["**/*.test.ts"],
+      profiles: [],
+      rules: {},
     });
   });
 
   it("loads profiles and rule overrides", () => {
-    expect(loadConfigFile(directoryWithConfig({ profiles: ["angular", "strict"], rules: { "sonarjs/file-header": "off" } })))
-      .toMatchObject({ profiles: ["angular", "strict"], rules: { "sonarjs/file-header": "off" } });
+    expect(
+      loadConfigFile(
+        directoryWithConfig({
+          profiles: ["angular", "strict"],
+          rules: { "sonarjs/file-header": "off" },
+        }),
+      ),
+    ).toMatchObject({ profiles: ["angular", "strict"], rules: { "sonarjs/file-header": "off" } });
   });
 
   it("rejects unknown profiles", () => {
-    expect(() => loadConfigFile(directoryWithConfig({ profiles: ["reactish"] }))).toThrow(ConfigError);
+    expect(() => loadConfigFile(directoryWithConfig({ profiles: ["reactish"] }))).toThrow(
+      ConfigError,
+    );
   });
 
   it.each([{ exclude: [123] }, { exclude: [""] }, { exclude: "dist/**" }, []])(

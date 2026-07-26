@@ -29,9 +29,7 @@ describe("buildRuleCategorization", () => {
   });
 
   it("keeps ordinary code-smell rules in maintainability", () => {
-    expect(buildRuleCategorization().maintainability).toContain(
-      "sonarjs/no-identical-functions",
-    );
+    expect(buildRuleCategorization().maintainability).toContain("sonarjs/no-identical-functions");
   });
 
   it("separates metric probes from issue categories", () => {
@@ -52,26 +50,14 @@ describe("buildRuleCategorization", () => {
 
   it("composes typed, environment, framework, and strict profiles", () => {
     expect(
-      resolveRuleConfiguration(["typed"]).rules[
-        "@typescript-eslint/no-floating-promises"
-      ],
+      resolveRuleConfiguration(["typed"]).rules["@typescript-eslint/no-floating-promises"],
     ).toBe("warn");
     expect(resolveRuleConfiguration(["node"]).rules["no-undef"]).toBe("warn");
-    expect(resolveRuleConfiguration(["browser"]).rules["no-undef"]).toBe(
-      "warn",
-    );
+    expect(resolveRuleConfiguration(["browser"]).rules["no-undef"]).toBe("warn");
+    expect(resolveRuleConfiguration(["react"]).rules["react-hooks/rules-of-hooks"]).toBeDefined();
+    expect(resolveRuleConfiguration(["lambda"]).rules["sonarjs/no-hardcoded-secrets"]).toBe("warn");
     expect(
-      resolveRuleConfiguration(["react"]).rules["react-hooks/rules-of-hooks"],
-    ).toBeDefined();
-    expect(
-      resolveRuleConfiguration(["lambda"]).rules[
-        "sonarjs/no-hardcoded-secrets"
-      ],
-    ).toBe("warn");
-    expect(
-      resolveRuleConfiguration(["lambda"]).rules[
-        "@typescript-eslint/no-floating-promises"
-      ],
+      resolveRuleConfiguration(["lambda"]).rules["@typescript-eslint/no-floating-promises"],
     ).toBe("warn");
     expect(
       resolveRuleConfiguration(["lambda"]).rules[
@@ -79,68 +65,57 @@ describe("buildRuleCategorization", () => {
       ],
     ).toBe("warn");
     expect(
-      resolveRuleConfiguration(["angular"]).rules[
-        "@angular-eslint/prefer-standalone"
-      ],
+      resolveRuleConfiguration(["angular"]).rules["@angular-eslint/prefer-standalone"],
     ).toBeDefined();
     expect(
-      resolveRuleConfiguration(["angular"]).rules[
-        "@typescript-eslint/no-floating-promises"
-      ],
+      resolveRuleConfiguration(["angular"]).rules["@typescript-eslint/no-floating-promises"],
     ).toBe("warn");
     expect(
-      resolveRuleConfiguration(["angular"]).rules[
-        "sonarjs/no-angular-bypass-sanitization"
-      ],
+      resolveRuleConfiguration(["angular"]).rules["sonarjs/no-angular-bypass-sanitization"],
     ).toBe("warn");
     expect(
       resolveRuleConfiguration(["angular"]).rules[
         "code-scanner-angular-security/no-direct-dom-html-sinks"
       ],
     ).toBe("warn");
-    expect(
-      resolveRuleConfiguration(["strict"]).rules["sonarjs/no-duplicate-string"],
-    ).toEqual(["warn", { threshold: 5 }]);
+    expect(resolveRuleConfiguration(["strict"]).rules["sonarjs/no-duplicate-string"]).toEqual([
+      "warn",
+      { threshold: 5 },
+    ]);
   });
 
   it("categorizes Angular security and TypeScript cleanliness rules", () => {
     const categories = buildRuleCategorization();
-    expect(categories.security).toContain(
-      "sonarjs/no-angular-bypass-sanitization",
-    );
-    expect(categories.cleanliness).toContain(
-      "@typescript-eslint/no-unused-vars",
-    );
+    expect(categories.security).toContain("sonarjs/no-angular-bypass-sanitization");
+    expect(categories.cleanliness).toContain("@typescript-eslint/no-unused-vars");
     expect(categories.security).toContain(
       "code-scanner-angular-security/no-sensitive-browser-storage",
     );
-    expect(categories.security).toContain(
-      "code-scanner-lambda/no-sensitive-event-logging",
-    );
+    expect(categories.security).toContain("code-scanner-lambda/no-sensitive-event-logging");
     expect(categories.maintainability).toContain(
       "code-scanner-lambda/no-client-construction-in-handler",
     );
   });
 
   it("rejects unknown rule overrides after a plugin upgrade or config typo", () => {
-    expect(() =>
-      buildEslintRules([], { "sonarjs/not-a-real-rule": "warn" }),
-    ).toThrow(/Unknown configured rule/);
+    expect(() => buildEslintRules([], { "sonarjs/not-a-real-rule": "warn" })).toThrow(
+      /Unknown configured rule/,
+    );
   });
 
   it("applies overrides only within a compatible plugin scope", () => {
     const override = { "@angular-eslint/template/button-has-type": "off" };
-    expect(
-      resolveRuleConfiguration(["angular"], override).rules,
-    ).not.toHaveProperty("@angular-eslint/template/button-has-type");
+    expect(resolveRuleConfiguration(["angular"], override).rules).not.toHaveProperty(
+      "@angular-eslint/template/button-has-type",
+    );
     expect(
       buildAngularTemplateRules(["generic", "angular"], override)[
         "@angular-eslint/template/button-has-type"
       ],
     ).toBe("off");
-    expect(() =>
-      resolveRuleConfiguration([], { "react-hooks/rules-of-hooks": "warn" }),
-    ).toThrow(/requires the react profile/);
+    expect(() => resolveRuleConfiguration([], { "react-hooks/rules-of-hooks": "warn" })).toThrow(
+      /requires the react profile/,
+    );
     expect(() =>
       resolveRuleConfiguration([], {
         "code-scanner-lambda/no-async-callback-handler": "warn",
@@ -155,24 +130,20 @@ describe("buildRuleCategorization", () => {
     expect(() => resolveRuleConfiguration([], override)).toThrow(
       /requires the typed, angular, or lambda profile/,
     );
-    expect(resolveRuleConfiguration(["typed"], override).rules).toMatchObject(
-      override,
-    );
+    expect(resolveRuleConfiguration(["typed"], override).rules).toMatchObject(override);
   });
 
   it("allows type-aware TypeScript overrides to remain disabled without a typed profile", () => {
     const override = { "@typescript-eslint/no-floating-promises": "off" };
 
-    expect(resolveRuleConfiguration([], override).rules).toMatchObject(
-      override,
-    );
+    expect(resolveRuleConfiguration([], override).rules).toMatchObject(override);
   });
 
   it("counts only rules that are enabled in at least one linting scope", () => {
     const baseline = resolveRuleConfiguration([]).effectiveRuleCount;
-    expect(
-      resolveRuleConfiguration([], { "no-undef": "off" }).effectiveRuleCount,
-    ).toBe(baseline - 1);
+    expect(resolveRuleConfiguration([], { "no-undef": "off" }).effectiveRuleCount).toBe(
+      baseline - 1,
+    );
     expect(
       resolveRuleConfiguration([], {
         "@typescript-eslint/no-explicit-any": "warn",
@@ -196,17 +167,15 @@ describe("buildRuleCategorization", () => {
     expect(lock.packages["node_modules/eslint-plugin-security"].version).toBe(
       RULE_MANIFEST.plugins.security,
     );
-    expect(
-      lock.packages["node_modules/@angular-eslint/eslint-plugin"].version,
-    ).toBe(RULE_MANIFEST.plugins.angular);
+    expect(lock.packages["node_modules/@angular-eslint/eslint-plugin"].version).toBe(
+      RULE_MANIFEST.plugins.angular,
+    );
     expect(lock.packages["node_modules/typescript-eslint"].version).toBe(
       RULE_MANIFEST.plugins.typescriptEslint,
     );
-    expect(
-      lock.packages["node_modules/eslint-plugin-react-hooks"].version,
-    ).toBe(RULE_MANIFEST.plugins.reactHooks);
-    expect(lock.packages["node_modules/globals"].version).toBe(
-      RULE_MANIFEST.plugins.globals,
+    expect(lock.packages["node_modules/eslint-plugin-react-hooks"].version).toBe(
+      RULE_MANIFEST.plugins.reactHooks,
     );
+    expect(lock.packages["node_modules/globals"].version).toBe(RULE_MANIFEST.plugins.globals);
   });
 });

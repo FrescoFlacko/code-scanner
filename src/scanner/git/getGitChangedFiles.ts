@@ -55,9 +55,7 @@ function isWithinTarget(absoluteTarget: string, canonical: string): boolean {
   const relative = path.relative(absoluteTarget, canonical);
   return (
     relative === "" ||
-    (!relative.startsWith(`..${path.sep}`) &&
-      relative !== ".." &&
-      !path.isAbsolute(relative))
+    (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative))
   );
 }
 
@@ -77,16 +75,11 @@ function resolveChangedFiles(
   includeHtml: boolean,
 ): string[] {
   return changedPaths
-    .map((filePath) =>
-      path.normalize(path.resolve(paths.repositoryRoot, filePath)),
-    )
+    .map((filePath) => path.normalize(path.resolve(paths.repositoryRoot, filePath)))
     .filter((canonical) => isWithinTarget(paths.absoluteTarget, canonical))
     .map((canonical) =>
       path.normalize(
-        path.resolve(
-          paths.requestedTarget,
-          path.relative(paths.absoluteTarget, canonical),
-        ),
+        path.resolve(paths.requestedTarget, path.relative(paths.absoluteTarget, canonical)),
       ),
     )
     .filter((filePath) => isSupportedFile(filePath, includeHtml))
@@ -99,18 +92,10 @@ function toError(error: unknown): Error {
 }
 
 /** Returns changed scannable files reported by Git. */
-export function getGitChangedFiles(
-  targetPath: string,
-  includeHtml = false,
-): string[] {
+export function getGitChangedFiles(targetPath: string, includeHtml = false): string[] {
   try {
     const paths = resolveRepositoryPaths(targetPath);
-    const output = runGit(targetPath, [
-      "status",
-      "--porcelain=v1",
-      "-z",
-      "--untracked-files=all",
-    ]);
+    const output = runGit(targetPath, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
     if (!output) return [];
     return resolveChangedFiles(parseChangedPaths(output), paths, includeHtml);
   } catch (error) {

@@ -2,10 +2,7 @@ import type { FileTrendInfo, Trends } from "../types.js";
 import type { HistoryData } from "./loadHistory.js";
 
 type TrendDirection = "improved" | "regressed";
-type CountMetric = Exclude<
-  keyof FileTrendInfo,
-  "file" | "commentRatio" | "commentRatioQuality"
->;
+type CountMetric = Exclude<keyof FileTrendInfo, "file" | "commentRatio" | "commentRatioQuality">;
 
 const COUNT_METRICS: Array<{ key: CountMetric; label: string }> = [
   { key: "cognitive", label: "cognitive" },
@@ -34,12 +31,8 @@ function printCountChange(
 /** Prints the percentage change in average cognitive complexity. */
 function printCognitiveChange(value: number, previousAverage: number): void {
   if (value < -1) {
-    const percentage = Math.abs(
-      Math.round((value / (previousAverage || 1)) * 100),
-    );
-    console.log(
-      `   📉 Avg Cognitive Complexity improved by ${percentage}% (Good job!)`,
-    );
+    const percentage = Math.abs(Math.round((value / (previousAverage || 1)) * 100));
+    console.log(`   📉 Avg Cognitive Complexity improved by ${percentage}% (Good job!)`);
   } else if (value > 1) {
     const percentage = Math.round((value / (previousAverage || 1)) * 100);
     console.log(`   🔺 Avg Cognitive Complexity increased by ${percentage}%`);
@@ -62,10 +55,7 @@ function printTotalChanges(trends: Trends, previousHistory: HistoryData): void {
     "   🔺 Security issues increased by ",
     " (Good job!)",
   );
-  printCognitiveChange(
-    totals.avgCognitive,
-    previousHistory.totals.avgCognitive,
-  );
+  printCognitiveChange(totals.avgCognitive, previousHistory.totals.avgCognitive);
   printCountChange(
     totals.maintainability,
     "   📉 Maintainability issues decreased by ",
@@ -84,18 +74,12 @@ function matchesDirection(value: number, direction: TrendDirection): boolean {
 }
 
 /** Determines whether a quality-score change belongs in a trend direction. */
-function matchesQualityDirection(
-  value: number,
-  direction: TrendDirection,
-): boolean {
+function matchesQualityDirection(value: number, direction: TrendDirection): boolean {
   return direction === "improved" ? value > 0 : value < 0;
 }
 
 /** Formats the metric details for one changed file. */
-function formatFileTrend(
-  trend: FileTrendInfo,
-  direction: TrendDirection,
-): string {
+function formatFileTrend(trend: FileTrendInfo, direction: TrendDirection): string {
   const details: string[] = [];
   for (const metric of COUNT_METRICS) {
     const value = trend[metric.key];
@@ -111,15 +95,10 @@ function formatFileTrend(
 }
 
 /** Prints at most five changed files for one trend direction. */
-function printFileTrends(
-  trends: FileTrendInfo[],
-  direction: TrendDirection,
-): void {
+function printFileTrends(trends: FileTrendInfo[], direction: TrendDirection): void {
   if (trends.length === 0) return;
   const heading =
-    direction === "improved"
-      ? "\n   ✅ Files that improved:"
-      : "\n   ⚠️  Files that regressed:";
+    direction === "improved" ? "\n   ✅ Files that improved:" : "\n   ⚠️  Files that regressed:";
   console.log(heading);
   for (const trend of trends.slice(0, 5)) {
     console.log(`      ${trend.file} (${formatFileTrend(trend, direction)})`);
@@ -133,10 +112,7 @@ function printFileTrends(
 function hasNoSignificantChange(trends: Trends): boolean {
   const { avgCognitive, ...exactTotals } = trends.totals;
   const changedFileCount =
-    trends.improved.length +
-    trends.regressed.length +
-    trends.new.length +
-    trends.removed.length;
+    trends.improved.length + trends.regressed.length + trends.new.length + trends.removed.length;
   return (
     Object.values(exactTotals).every((value) => value === 0) &&
     Math.abs(avgCognitive) <= 1 &&
@@ -145,10 +121,7 @@ function hasNoSignificantChange(trends: Trends): boolean {
 }
 
 /** Prints trend comparisons against a previous compatible scan. */
-export function printTrends(
-  trends: Trends | null,
-  previousHistory: HistoryData | null,
-): void {
+export function printTrends(trends: Trends | null, previousHistory: HistoryData | null): void {
   if (!trends || !previousHistory) {
     console.log("\n📈 TREND ANALYSIS");
     console.log("   First scan - no previous data to compare.");

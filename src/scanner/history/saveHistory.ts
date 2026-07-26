@@ -13,17 +13,23 @@ export function saveHistory(
   configurationVersion = 1,
 ): void {
   const historyPath = path.join(targetPath, HISTORY_FILENAME);
-  const temporaryPath = path.join(targetPath, `.${HISTORY_FILENAME}.${process.pid}.${randomUUID()}.tmp`);
+  const temporaryPath = path.join(
+    targetPath,
+    `.${HISTORY_FILENAME}.${process.pid}.${randomUUID()}.tmp`,
+  );
 
-  const fileResults: Record<string, {
-    cognitive: number;
-    cyclomatic: number;
-    security: number;
-    maintainability: number;
-    cleanliness: number;
-    scannerErrors: number;
-    commentRatio: number;
-  }> = {};
+  const fileResults: Record<
+    string,
+    {
+      cognitive: number;
+      cyclomatic: number;
+      security: number;
+      maintainability: number;
+      cleanliness: number;
+      scannerErrors: number;
+      commentRatio: number;
+    }
+  > = {};
 
   report.forEach((r) => {
     fileResults[r.relativePath] = {
@@ -62,10 +68,18 @@ export function saveHistory(
         throw new Error("history destination is not a regular file");
       }
     }
-    fs.writeFileSync(temporaryPath, JSON.stringify(history, null, 2), { encoding: "utf8", flag: "wx", mode: 0o600 });
+    fs.writeFileSync(temporaryPath, JSON.stringify(history, null, 2), {
+      encoding: "utf8",
+      flag: "wx",
+      mode: 0o600,
+    });
     fs.renameSync(temporaryPath, historyPath);
   } catch {
-    try { fs.unlinkSync(temporaryPath); } catch { /* temporary file was never created or already moved */ }
+    try {
+      fs.unlinkSync(temporaryPath);
+    } catch {
+      /* temporary file was never created or already moved */
+    }
     console.warn(`⚠️  Warning: Could not save history to ${HISTORY_FILENAME}`);
   }
 }

@@ -19,10 +19,7 @@ describe("tableFormatting", () => {
   });
 
   it("preserves the extension when a long basename must be shortened", () => {
-    const result = truncatePath(
-      "HistoricalLeagueInfoErrorBoundaryWithMoreContext.tsx",
-      30,
-    );
+    const result = truncatePath("HistoricalLeagueInfoErrorBoundaryWithMoreContext.tsx", 30);
 
     expect(result).toMatch(/…\.tsx$/);
     expect(getDisplayWidth(result)).toBeLessThanOrEqual(30);

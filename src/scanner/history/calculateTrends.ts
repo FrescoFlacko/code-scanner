@@ -10,15 +10,11 @@ function createTrendTotals(
 ): Trends["totals"] {
   return {
     security: currentTotals.security - previousHistory.totals.security,
-    maintainability:
-      currentTotals.maintainability - previousHistory.totals.maintainability,
+    maintainability: currentTotals.maintainability - previousHistory.totals.maintainability,
     cleanliness: currentTotals.cleanliness - previousHistory.totals.cleanliness,
-    scannerErrors:
-      currentTotals.scannerErrors - previousHistory.totals.scannerErrors,
-    avgCognitive:
-      currentTotals.avgCognitive - previousHistory.totals.avgCognitive,
-    avgCyclomatic:
-      currentTotals.avgCyclomatic - previousHistory.totals.avgCyclomatic,
+    scannerErrors: currentTotals.scannerErrors - previousHistory.totals.scannerErrors,
+    avgCognitive: currentTotals.avgCognitive - previousHistory.totals.avgCognitive,
+    avgCyclomatic: currentTotals.avgCyclomatic - previousHistory.totals.avgCyclomatic,
     files: currentReport.length - previousHistory.totals.files,
   };
 }
@@ -38,8 +34,7 @@ function createFileTrend(
     scannerErrors: current.scannerErrors - previous.scannerErrors,
     commentRatio: current.commentRatio - previous.commentRatio,
     commentRatioQuality:
-      scoreCommentRatio(current.commentRatio) -
-      scoreCommentRatio(previous.commentRatio),
+      scoreCommentRatio(current.commentRatio) - scoreCommentRatio(previous.commentRatio),
   };
 }
 
@@ -88,14 +83,9 @@ function classifyCurrentFiles(
 }
 
 /** Finds files that existed only in the previous scan. */
-function findRemovedFiles(
-  currentReport: FileReport[],
-  previousHistory: HistoryData,
-): string[] {
+function findRemovedFiles(currentReport: FileReport[], previousHistory: HistoryData): string[] {
   const currentFiles = new Set(currentReport.map((file) => file.relativePath));
-  return Object.keys(previousHistory.files).filter(
-    (filePath) => !currentFiles.has(filePath),
-  );
+  return Object.keys(previousHistory.files).filter((filePath) => !currentFiles.has(filePath));
 }
 
 /** Calculates project and file trends against compatible history. */

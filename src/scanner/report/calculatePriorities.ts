@@ -51,10 +51,7 @@ function safePercentage(value: number, total: number): number {
   return Math.round((value / total) * 100);
 }
 
-export function calculatePriorities(
-  report: FileReport[],
-  totals: Totals
-): PrioritiesResult {
+export function calculatePriorities(report: FileReport[], totals: Totals): PrioritiesResult {
   if (report.length === 0) {
     return { items: [], overallImprovementPct: 0 };
   }
@@ -89,7 +86,9 @@ export function calculatePriorities(
 
   const totalWeightedIssues =
     totals.scannerErrors * 1_000_000 +
-    totals.security * 100 + totals.maintainability * 1.5 + totals.cleanliness * 1;
+    totals.security * 100 +
+    totals.maintainability * 1.5 +
+    totals.cleanliness * 1;
 
   const top3WeightedIssues = top3.reduce((sum, { file }) => {
     return (
@@ -102,9 +101,7 @@ export function calculatePriorities(
   }, 0);
 
   const overallImprovementPct =
-    totalWeightedIssues > 0
-      ? Math.round((top3WeightedIssues / totalWeightedIssues) * 100)
-      : 0;
+    totalWeightedIssues > 0 ? Math.round((top3WeightedIssues / totalWeightedIssues) * 100) : 0;
 
   return { items, overallImprovementPct };
 }

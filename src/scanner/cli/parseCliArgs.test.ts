@@ -20,7 +20,10 @@ describe("parseCliArgs", () => {
 
   describe("--profile flag", () => {
     it("collects explicit profiles", () => {
-      expect(parseCliArgs(["--profile", "angular", "--profile=lambda"]).profiles).toEqual(["angular", "lambda"]);
+      expect(parseCliArgs(["--profile", "angular", "--profile=lambda"]).profiles).toEqual([
+        "angular",
+        "lambda",
+      ]);
     });
 
     it("rejects unknown and missing profiles", () => {
@@ -95,10 +98,13 @@ describe("parseCliArgs", () => {
       expect(result.excludes).toEqual(["*.test.ts"]);
     });
 
-    it.each([["--exclude"], ["-e"], ["--exclude="]])("rejects a missing pattern for %s", (...args) => {
-      expect(() => parseCliArgs(args)).toThrow(UserError);
-      expect(() => parseCliArgs(args)).toThrow(/requires a non-empty glob pattern/);
-    });
+    it.each([["--exclude"], ["-e"], ["--exclude="]])(
+      "rejects a missing pattern for %s",
+      (...args) => {
+        expect(() => parseCliArgs(args)).toThrow(UserError);
+        expect(() => parseCliArgs(args)).toThrow(/requires a non-empty glob pattern/);
+      },
+    );
   });
 
   describe("boolean flags", () => {
@@ -135,7 +141,9 @@ describe("parseCliArgs", () => {
     });
 
     it("rejects multiple positional paths", () => {
-      expect(() => parseCliArgs(["./src", "./lib"])).toThrow("Only one target path may be provided");
+      expect(() => parseCliArgs(["./src", "./lib"])).toThrow(
+        "Only one target path may be provided",
+      );
     });
   });
 
@@ -156,12 +164,7 @@ describe("parseCliArgs", () => {
 
   describe("combined flags", () => {
     it("handles multiple flags together", () => {
-      const result = parseCliArgs([
-        "./lib",
-        "--list-issues",
-        "--exclude", "*.test.ts",
-        "--legend",
-      ]);
+      const result = parseCliArgs(["./lib", "--list-issues", "--exclude", "*.test.ts", "--legend"]);
       expect(result.targetPath).toMatch(/lib$/);
       expect(result.listIssues).toBe(true);
       expect(result.excludes).toEqual(["*.test.ts"]);

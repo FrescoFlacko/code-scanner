@@ -200,9 +200,7 @@ describe("calculateTrends", () => {
 
   describe("improved files", () => {
     it("identifies files with reduced cognitive complexity", () => {
-      const report = [
-        makeFileReport({ relativePath: "improved.ts", cognitive: 3 }),
-      ];
+      const report = [makeFileReport({ relativePath: "improved.ts", cognitive: 3 })];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
@@ -225,9 +223,7 @@ describe("calculateTrends", () => {
     });
 
     it("identifies files with reduced security issues", () => {
-      const report = [
-        makeFileReport({ relativePath: "secured.ts", security: 1 }),
-      ];
+      const report = [makeFileReport({ relativePath: "secured.ts", security: 1 })];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
@@ -252,9 +248,7 @@ describe("calculateTrends", () => {
 
   describe("regressed files", () => {
     it("identifies files with increased cognitive complexity", () => {
-      const report = [
-        makeFileReport({ relativePath: "worse.ts", cognitive: 15 }),
-      ];
+      const report = [makeFileReport({ relativePath: "worse.ts", cognitive: 15 })];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
@@ -277,9 +271,7 @@ describe("calculateTrends", () => {
     });
 
     it("identifies files with increased security issues", () => {
-      const report = [
-        makeFileReport({ relativePath: "risky.ts", security: 8 }),
-      ];
+      const report = [makeFileReport({ relativePath: "risky.ts", security: 8 })];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
@@ -302,9 +294,7 @@ describe("calculateTrends", () => {
     });
 
     it("identifies files with increased maintainability issues", () => {
-      const report = [
-        makeFileReport({ relativePath: "messy.ts", maintainability: 20 }),
-      ];
+      const report = [makeFileReport({ relativePath: "messy.ts", maintainability: 20 })];
       const totals = makeTotals();
       const history = makeHistoryData({
         files: {
@@ -357,10 +347,7 @@ describe("calculateTrends", () => {
 
   describe("comment ratio quality", () => {
     /** Calculates trends for a file whose only change is its comment ratio. */
-    function calculateCommentRatioTrend(
-      previousCommentRatio: number,
-      currentCommentRatio: number,
-    ) {
+    function calculateCommentRatioTrend(previousCommentRatio: number, currentCommentRatio: number) {
       const report = [
         makeFileReport({
           relativePath: "comments.ts",

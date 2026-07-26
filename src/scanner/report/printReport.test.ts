@@ -33,9 +33,7 @@ function createReport(overrides: Partial<FileReport> = {}): FileReport {
 /** Returns text written through console.log during a callback. */
 function captureConsole(callback: () => void): string[] {
   const output: string[] = [];
-  vi.spyOn(console, "log").mockImplementation((value = "") =>
-    output.push(String(value)),
-  );
+  vi.spyOn(console, "log").mockImplementation((value = "") => output.push(String(value)));
   callback();
   return output;
 }
@@ -50,8 +48,7 @@ describe("printReport", () => {
       printReport(
         [
           createReport({
-            relativePath:
-              "src/features/league/components/HistoricalLeagueInfoErrorBoundary.tsx",
+            relativePath: "src/features/league/components/HistoricalLeagueInfoErrorBoundary.tsx",
           }),
         ],
         totals,
@@ -83,12 +80,8 @@ describe("printReport", () => {
         { terminalWidth: 140 },
       ),
     );
-    const rows = output.filter(
-      (line) => line.includes(" | ") && !line.startsWith("File"),
-    );
-    const separatorWidths = rows.map((line) =>
-      getDisplayWidth(line.slice(0, line.indexOf(" | "))),
-    );
+    const rows = output.filter((line) => line.includes(" | ") && !line.startsWith("File"));
+    const separatorWidths = rows.map((line) => getDisplayWidth(line.slice(0, line.indexOf(" | "))));
 
     expect(rows[0]).toContain("src/功能/🚀Component.tsx");
     expect(separatorWidths).toEqual([separatorWidths[0], separatorWidths[0]]);
@@ -102,9 +95,7 @@ describe("printReport", () => {
       }),
     );
 
-    expect(output).toContain(
-      "File: src/features/league/components/Component.tsx",
-    );
+    expect(output).toContain("File: src/features/league/components/Component.tsx");
     expect(output.some((line) => line.includes(" | "))).toBe(false);
     expect(output.every((line) => getDisplayWidth(line) <= 60)).toBe(true);
   });
@@ -116,11 +107,7 @@ describe("printReport", () => {
       }),
     );
 
-    expect(
-      output.some((line) =>
-        line.includes("Documentation is critically missing"),
-      ),
-    ).toBe(false);
+    expect(output.some((line) => line.includes("Documentation is critically missing"))).toBe(false);
   });
 
   it("keeps the full relative path in detailed issue output", () => {

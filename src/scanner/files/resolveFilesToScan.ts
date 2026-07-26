@@ -20,8 +20,17 @@ export interface ResolveFilesOptions {
   includeHtml?: boolean;
 }
 
-export async function resolveFilesToScan({ targetPath, excludes, scanGitChanges, quiet = false, includeHtml = false }: ResolveFilesOptions): Promise<string[]> {
-  if (!Array.isArray(excludes) || excludes.some((pattern) => typeof pattern !== "string" || pattern.trim() === "")) {
+export async function resolveFilesToScan({
+  targetPath,
+  excludes,
+  scanGitChanges,
+  quiet = false,
+  includeHtml = false,
+}: ResolveFilesOptions): Promise<string[]> {
+  if (
+    !Array.isArray(excludes) ||
+    excludes.some((pattern) => typeof pattern !== "string" || pattern.trim() === "")
+  ) {
     throw new ConfigError("Exclude patterns must be non-empty strings");
   }
   const effectiveExcludes = [...DEFAULT_EXCLUDES, ...excludes];

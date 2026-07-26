@@ -63,13 +63,11 @@ function scoreRangedMetric(
     return 100 - ratio * 10;
   }
   if (value <= thresholds.medium) {
-    const ratio =
-      (value - thresholds.low) / (thresholds.medium - thresholds.low);
+    const ratio = (value - thresholds.low) / (thresholds.medium - thresholds.low);
     return 90 - ratio * 20;
   }
   if (value <= thresholds.high) {
-    const ratio =
-      (value - thresholds.medium) / (thresholds.high - thresholds.medium);
+    const ratio = (value - thresholds.medium) / (thresholds.high - thresholds.medium);
     return 70 - ratio * 20;
   }
   const beyondHigh = value - thresholds.high;
@@ -94,10 +92,7 @@ export function calculateGrade(metrics: FileMetrics): Grade {
     security: scoreMetric(metrics.security, THRESHOLDS.security),
     cognitive: scoreMetric(metrics.cognitive, THRESHOLDS.cognitive),
     cyclomatic: scoreMetric(metrics.cyclomatic, THRESHOLDS.cyclomatic),
-    maintainability: scoreMetric(
-      metrics.maintainability,
-      THRESHOLDS.maintainability,
-    ),
+    maintainability: scoreMetric(metrics.maintainability, THRESHOLDS.maintainability),
     cleanliness: scoreMetric(metrics.cleanliness, THRESHOLDS.cleanliness),
     commentRatio: scoreCommentRatio(metrics.commentRatio),
   };

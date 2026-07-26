@@ -27,9 +27,7 @@ export function padToDisplayWidth(value: string, width: number): string {
 }
 
 /** Returns a safe terminal width, including a deterministic non-TTY fallback. */
-export function resolveTerminalWidth(
-  columns: number | undefined = process.stdout.columns,
-): number {
+export function resolveTerminalWidth(columns: number | undefined = process.stdout.columns): number {
   return typeof columns === "number" && Number.isFinite(columns) && columns > 0
     ? Math.floor(columns)
     : FALLBACK_TERMINAL_WIDTH;
@@ -41,15 +39,9 @@ export function canShowCommentColumn(terminalWidth: number): boolean {
 }
 
 /** Calculates the file-column width from the space left by fixed metric columns. */
-export function getFileColumnWidth(
-  terminalWidth: number,
-  includeComment: boolean,
-): number {
+export function getFileColumnWidth(terminalWidth: number, includeComment: boolean): number {
   const availableWidth = terminalWidth - getFixedColumnsWidth(includeComment);
-  return Math.max(
-    MIN_FILE_COLUMN_WIDTH,
-    Math.min(MAX_FILE_COLUMN_WIDTH, availableWidth),
-  );
+  return Math.max(MIN_FILE_COLUMN_WIDTH, Math.min(MAX_FILE_COLUMN_WIDTH, availableWidth));
 }
 
 /** Shortens a path by removing middle directories before truncating its basename. */
@@ -65,16 +57,14 @@ export function truncatePath(relativePath: string, width: number): string {
 
   if (firstDirectory) {
     const shortenedDirectories = `${firstDirectory}/…/${basename}`;
-    if (getDisplayWidth(shortenedDirectories) <= width)
-      return shortenedDirectories;
+    if (getDisplayWidth(shortenedDirectories) <= width) return shortenedDirectories;
   }
 
   const basenameOnly = `…/${basename}`;
   if (getDisplayWidth(basenameOnly) <= width) return basenameOnly;
 
   const directoryPrefix = firstDirectory ? `${firstDirectory}/…/` : "";
-  const prefix =
-    getDisplayWidth(directoryPrefix) < width - 1 ? directoryPrefix : "";
+  const prefix = getDisplayWidth(directoryPrefix) < width - 1 ? directoryPrefix : "";
   return `${prefix}${truncateFilename(basename, width - getDisplayWidth(prefix))}`;
 }
 
@@ -95,8 +85,7 @@ function truncateFilename(filename: string, width: number): string {
 
   const extension = path.posix.extname(filename);
   const extensionWidth = getDisplayWidth(extension);
-  const suffix =
-    extensionWidth > 0 && extensionWidth < width - 1 ? `…${extension}` : "…";
+  const suffix = extensionWidth > 0 && extensionWidth < width - 1 ? `…${extension}` : "…";
   return `${takeStart(filename.slice(0, extension ? -extension.length : undefined), width - getDisplayWidth(suffix))}${suffix}`;
 }
 

@@ -78,56 +78,51 @@ describe("printTrends", () => {
     ["a regressed file", {}, { regressed: [{}] }],
     ["a new file", {}, { new: ["new.ts"] }],
     ["a removed file", {}, { removed: ["removed.ts"] }],
-  ])(
-    "does not report no significant changes for %s",
-    (_, totalChanges, listChanges) => {
-      const output: string[] = [];
-      vi.spyOn(console, "log").mockImplementation((value = "") => {
-        output.push(String(value));
-      });
-      const previousHistory = {
-        timestamp: "2026-01-01T00:00:00.000Z",
-        totals: { avgCognitive: 10 },
-      } as HistoryData;
-      const fileTrend = {
-        file: "changed.ts",
-        cognitive: 0,
-        cyclomatic: 0,
+  ])("does not report no significant changes for %s", (_, totalChanges, listChanges) => {
+    const output: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((value = "") => {
+      output.push(String(value));
+    });
+    const previousHistory = {
+      timestamp: "2026-01-01T00:00:00.000Z",
+      totals: { avgCognitive: 10 },
+    } as HistoryData;
+    const fileTrend = {
+      file: "changed.ts",
+      cognitive: 0,
+      cyclomatic: 0,
+      security: 0,
+      maintainability: 0,
+      cleanliness: 0,
+      scannerErrors: 0,
+      commentRatio: 0,
+      commentRatioQuality: 0,
+    };
+    const trends: Trends = {
+      totals: {
         security: 0,
         maintainability: 0,
         cleanliness: 0,
         scannerErrors: 0,
-        commentRatio: 0,
-        commentRatioQuality: 0,
-      };
-      const trends: Trends = {
-        totals: {
-          security: 0,
-          maintainability: 0,
-          cleanliness: 0,
-          scannerErrors: 0,
-          avgCognitive: 0,
-          avgCyclomatic: 0,
-          files: 0,
-          ...totalChanges,
-        },
-        improved: [],
-        regressed: [],
-        new: [],
-        removed: [],
-        ...Object.fromEntries(
-          Object.entries(listChanges).map(([key, value]) => [
-            key,
-            key === "improved" || key === "regressed" ? [fileTrend] : value,
-          ]),
-        ),
-      };
+        avgCognitive: 0,
+        avgCyclomatic: 0,
+        files: 0,
+        ...totalChanges,
+      },
+      improved: [],
+      regressed: [],
+      new: [],
+      removed: [],
+      ...Object.fromEntries(
+        Object.entries(listChanges).map(([key, value]) => [
+          key,
+          key === "improved" || key === "regressed" ? [fileTrend] : value,
+        ]),
+      ),
+    };
 
-      printTrends(trends, previousHistory);
+    printTrends(trends, previousHistory);
 
-      expect(output.join("\n")).not.toContain(
-        "No significant changes since last scan.",
-      );
-    },
-  );
+    expect(output.join("\n")).not.toContain("No significant changes since last scan.");
+  });
 });

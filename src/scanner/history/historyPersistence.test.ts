@@ -8,11 +8,29 @@ import type { FileReport, Totals } from "../types.js";
 
 const directories: string[] = [];
 const fingerprint = "a".repeat(64);
-const totals: Totals = { security: 0, maintainability: 0, cleanliness: 0, scannerErrors: 0, avgCognitive: 1, avgCyclomatic: 1 };
-const report: FileReport[] = [{
-  file: "/tmp/example.ts", relativePath: "example.ts", cognitive: 1, cyclomatic: 1,
-  security: 0, maintainability: 0, cleanliness: 0, scannerErrors: 0, commentRatio: 0.2, grade: "A", issues: [],
-}];
+const totals: Totals = {
+  security: 0,
+  maintainability: 0,
+  cleanliness: 0,
+  scannerErrors: 0,
+  avgCognitive: 1,
+  avgCyclomatic: 1,
+};
+const report: FileReport[] = [
+  {
+    file: "/tmp/example.ts",
+    relativePath: "example.ts",
+    cognitive: 1,
+    cyclomatic: 1,
+    security: 0,
+    maintainability: 0,
+    cleanliness: 0,
+    scannerErrors: 0,
+    commentRatio: 0.2,
+    grade: "A",
+    issues: [],
+  },
+];
 
 function temporaryDirectory(): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "code-scanner-history-"));
@@ -22,7 +40,8 @@ function temporaryDirectory(): string {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  for (const directory of directories.splice(0)) fs.rmSync(directory, { recursive: true, force: true });
+  for (const directory of directories.splice(0))
+    fs.rmSync(directory, { recursive: true, force: true });
 });
 
 describe("history persistence", () => {
@@ -31,15 +50,35 @@ describe("history persistence", () => {
     saveHistory(directory, report, totals, fingerprint);
 
     expect(loadHistory(directory)).toMatchObject({
-      version: 3, configurationVersion: 1, configurationFingerprint: fingerprint, profiles: ["generic"],
-      totals: { files: 1 }, files: { "example.ts": { cognitive: 1 } },
+      version: 3,
+      configurationVersion: 1,
+      configurationFingerprint: fingerprint,
+      profiles: ["generic"],
+      totals: { files: 1 },
+      files: { "example.ts": { cognitive: 1 } },
     });
   });
 
   it.each([
     {},
     { version: 3, timestamp: new Date().toISOString(), totals: {}, files: {} },
-    { version: 3, configurationVersion: 1, configurationFingerprint: fingerprint, profiles: ["generic"], timestamp: new Date().toISOString(), totals: { files: 0, security: 0, maintainability: 0, cleanliness: 0, scannerErrors: 0, avgCognitive: Number.NaN, avgCyclomatic: 0 }, files: {} },
+    {
+      version: 3,
+      configurationVersion: 1,
+      configurationFingerprint: fingerprint,
+      profiles: ["generic"],
+      timestamp: new Date().toISOString(),
+      totals: {
+        files: 0,
+        security: 0,
+        maintainability: 0,
+        cleanliness: 0,
+        scannerErrors: 0,
+        avgCognitive: Number.NaN,
+        avgCyclomatic: 0,
+      },
+      files: {},
+    },
   ])("ignores invalid state %#", (history) => {
     const directory = temporaryDirectory();
     fs.writeFileSync(path.join(directory, ".scanner-history.json"), JSON.stringify(history));
